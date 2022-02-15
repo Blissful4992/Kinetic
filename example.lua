@@ -84,7 +84,7 @@ local Keybind = Section.NewKeybind({
         print("You pressed the right key !")
     end, 
     KCallBack = function(new)
-        print("You changed the key to: " .. SUB(tostring(new), 14, #tostring(new)))
+        print("You changed the key to: " .. string.sub(tostring(new), 14, #tostring(new)))
     end, 
     Default = Enum.KeyCode.X,
     Description = "Press the key to activate this !",
