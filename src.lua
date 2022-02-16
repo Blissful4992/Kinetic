@@ -239,7 +239,6 @@ Library.NewWindow = function(window_info)
 
     for i,v in pairs(window_info.ThemeOverrides) do
         local o = tostring(i)
-        print(o)
         if WinTheme[o] and WinTheme[o] ~= v then
             WinTheme[o] = v
         end
