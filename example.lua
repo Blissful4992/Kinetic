@@ -19,7 +19,7 @@ local Window = Library.NewWindow({
     WindowSize = Vector2.new(550, 450),     -- Initial Size of the Window
     WindowPosition = Vector2.new(400, 200), -- Initial Position of the Window
 
-    -- ThemeOverrides = Overrides,
+    ThemeOverrides = Overrides,
     
     -- WindowSizeCallback will fire everytime the user changes the size of the UI, 
     -- you can use this to save the size into a config system for example
