@@ -257,7 +257,7 @@ local WinTheme = {
     Section_Background = RGB(25, 25, 25),
 
     Accent = RGB(0, 255, 0),
-    DarkAccent = RGB(0, 100, 0)
+    Dark_Accent = RGB(0, 100, 0)
 }
 
 Library.NewWindow = function(window_info)
@@ -440,7 +440,7 @@ Library.NewWindow = function(window_info)
         local ResizeX = NEW("TextButton")
         local ResizeY = NEW("TextButton")
 
-        ResizeX.Name="ResizeX"ResizeX.Parent=Window;ResizeX.AutoButtonColor=false;ResizeX.BackgroundColor3=WinTheme.DarkAccent;ResizeX.BackgroundTransparency=0;ResizeX.Position=U2(1,-2,0,27)ResizeX.BorderSizePixel=0;ResizeX.Size=U2(0,2,1,-32)ResizeX.ZIndex=100000;ResizeX.Font=GTHM;ResizeX.Text=""ResizeX.TextColor3=RGB(0,0,0)ResizeX.TextSize=WinTheme.Text_Size_Medium;ResizeX.Visible=true;ResizeY.Name="ResizeY"ResizeY.Parent=Window;ResizeY.AutoButtonColor=false;ResizeY.BackgroundColor3=WinTheme.DarkAccent;ResizeY.BorderSizePixel=0;ResizeY.BackgroundTransparency=0;ResizeY.Position=U2(0,5,1,-2)ResizeY.Size=U2(1,-10,0,2)ResizeY.ZIndex=100000;ResizeY.Font=GTHM;ResizeY.Text=""ResizeY.TextColor3=RGB(0,0,0)ResizeY.TextSize=WinTheme.Text_Size_Big;ResizeY.Visible=true
+        ResizeX.Name="ResizeX"ResizeX.Parent=Window;ResizeX.AutoButtonColor=false;ResizeX.BackgroundColor3=WinTheme.Dark_Accent;ResizeX.BackgroundTransparency=0;ResizeX.Position=U2(1,-2,0,27)ResizeX.BorderSizePixel=0;ResizeX.Size=U2(0,2,1,-32)ResizeX.ZIndex=100000;ResizeX.Font=GTHM;ResizeX.Text=""ResizeX.TextColor3=RGB(0,0,0)ResizeX.TextSize=WinTheme.Text_Size_Medium;ResizeX.Visible=true;ResizeY.Name="ResizeY"ResizeY.Parent=Window;ResizeY.AutoButtonColor=false;ResizeY.BackgroundColor3=WinTheme.Dark_Accent;ResizeY.BorderSizePixel=0;ResizeY.BackgroundTransparency=0;ResizeY.Position=U2(0,5,1,-2)ResizeY.Size=U2(1,-10,0,2)ResizeY.ZIndex=100000;ResizeY.Font=GTHM;ResizeY.Text=""ResizeY.TextColor3=RGB(0,0,0)ResizeY.TextSize=WinTheme.Text_Size_Big;ResizeY.Visible=true
 
         local Mouse_Scaling_X = false
         local Mouse_Scaling_Y = false
@@ -453,7 +453,7 @@ Library.NewWindow = function(window_info)
 
         ResizeX.MouseLeave:Connect(function(ags)
             if not Mouse_Scaling_X then
-                ResizeX.BackgroundColor3 = WinTheme.DarkAccent
+                ResizeX.BackgroundColor3 = WinTheme.Dark_Accent
                 Mouse.Icon = ""
                 root.resetMessage()
             end
@@ -467,7 +467,7 @@ Library.NewWindow = function(window_info)
 
         ResizeY.MouseLeave:Connect(function(ags)
             if not Mouse_Scaling_Y then
-                ResizeY.BackgroundColor3 = WinTheme.DarkAccent
+                ResizeY.BackgroundColor3 = WinTheme.Dark_Accent
                 Mouse.Icon = ""
                 root.resetMessage()
             end
@@ -498,7 +498,7 @@ Library.NewWindow = function(window_info)
                     root.infoMessage("Scales the Window (Horizontal)")
                 else
                     Mouse.Icon = ""
-                    ResizeX.BackgroundColor3 = WinTheme.DarkAccent
+                    ResizeX.BackgroundColor3 = WinTheme.Dark_Accent
                     root.resetMessage()
                 end
                 
@@ -507,7 +507,7 @@ Library.NewWindow = function(window_info)
                     root.infoMessage("Scales the Window (Vertical)")
                 else
                     Mouse.Icon = ""
-                    ResizeY.BackgroundColor3 = WinTheme.DarkAccent
+                    ResizeY.BackgroundColor3 = WinTheme.Dark_Accent
                     root.resetMessage()
                 end
 
@@ -705,7 +705,7 @@ Library.NewWindow = function(window_info)
         local Page_Option_Right = NEW("Frame")
         local Page_Option_Left = NEW("Frame")
 
-        Page.Name="Page"Page.Parent=Pages;Page.Active=true;Page.BackgroundColor3=RGB(255,255,255)Page.BackgroundTransparency=1.000;Page.BorderColor3=RGB(255,0,4)Page.BorderSizePixel=0;Page.Position=U2(0,5,0,10)Page.Size=U2(1,-10,1,-10)Page.Visible=false;Page.CanvasSize=U2(1,0,20,0)Page.ScrollBarImageColor3=WinTheme.DarkAccent;Page.ScrollBarThickness=1;Page.ScrollingDirection=Enum.ScrollingDirection.Y;Page_Grid_Layout.Name="Page_Grid_Layout"Page_Grid_Layout.Parent=Page;Page_Grid_Layout.FillDirection=Enum.FillDirection.Horizontal;Page_Grid_Layout.SortOrder=SOLO;Page_Grid_Layout.HorizontalAlignment=Enum.HorizontalAlignment.Left;Page_Grid_Layout.CellPadding=U2(0,6,0,6)Page_Grid_Layout.CellSize=U2(0,0,0,0)Page_Option.Name="Page_Option"Page_Option.Parent=Page_Selector;Page_Option.BackgroundColor3=WinTheme.Accent;Page_Option.BackgroundTransparency=1;Page_Option.BorderSizePixel=0;Page_Option.ZIndex=10001;Page_Option.AutoButtonColor=false;Page_Option.Font=GTHM;Page_Option.Text=page_info.Text or"Page"Page_Option.TextColor3=WinTheme.Text_Color;Page_Option.TextSize=WinTheme.Text_Size_Big;Page_Option.Size=U2(0,Page_Option.TextBounds.X+40,1,0)Page_Option_Right.Name="Page_Option_Right"Page_Option_Right.Parent=Page_Option;Page_Option_Right.BackgroundColor3=WinTheme.Dark_Borders;Page_Option_Right.BorderSizePixel=0;Page_Option_Right.Position=U2(1,-1,0,4)Page_Option_Right.Size=U2(0,2,1,-8)Page_Option_Right.ZIndex=10002;Page_Option_Left.Name="Page_Option_Left"Page_Option_Left.Parent=Page_Option;Page_Option_Left.BackgroundColor3=WinTheme.Dark_Borders;Page_Option_Left.BorderSizePixel=0;Page_Option_Left.Position=U2(0,-1,0,4)Page_Option_Left.Size=U2(0,2,1,-8)Page_Option_Left.ZIndex=10002
+        Page.Name="Page"Page.Parent=Pages;Page.Active=true;Page.BackgroundColor3=RGB(255,255,255)Page.BackgroundTransparency=1.000;Page.BorderColor3=RGB(255,0,4)Page.BorderSizePixel=0;Page.Position=U2(0,5,0,10)Page.Size=U2(1,-10,1,-10)Page.Visible=false;Page.CanvasSize=U2(1,0,20,0)Page.ScrollBarImageColor3=WinTheme.Dark_Accent;Page.ScrollBarThickness=1;Page.ScrollingDirection=Enum.ScrollingDirection.Y;Page_Grid_Layout.Name="Page_Grid_Layout"Page_Grid_Layout.Parent=Page;Page_Grid_Layout.FillDirection=Enum.FillDirection.Horizontal;Page_Grid_Layout.SortOrder=SOLO;Page_Grid_Layout.HorizontalAlignment=Enum.HorizontalAlignment.Left;Page_Grid_Layout.CellPadding=U2(0,6,0,6)Page_Grid_Layout.CellSize=U2(0,0,0,0)Page_Option.Name="Page_Option"Page_Option.Parent=Page_Selector;Page_Option.BackgroundColor3=WinTheme.Accent;Page_Option.BackgroundTransparency=1;Page_Option.BorderSizePixel=0;Page_Option.ZIndex=10001;Page_Option.AutoButtonColor=false;Page_Option.Font=GTHM;Page_Option.Text=page_info.Text or"Page"Page_Option.TextColor3=WinTheme.Text_Color;Page_Option.TextSize=WinTheme.Text_Size_Big;Page_Option.Size=U2(0,Page_Option.TextBounds.X+40,1,0)Page_Option_Right.Name="Page_Option_Right"Page_Option_Right.Parent=Page_Option;Page_Option_Right.BackgroundColor3=WinTheme.Dark_Borders;Page_Option_Right.BorderSizePixel=0;Page_Option_Right.Position=U2(1,-1,0,4)Page_Option_Right.Size=U2(0,2,1,-8)Page_Option_Right.ZIndex=10002;Page_Option_Left.Name="Page_Option_Left"Page_Option_Left.Parent=Page_Option;Page_Option_Left.BackgroundColor3=WinTheme.Dark_Borders;Page_Option_Left.BorderSizePixel=0;Page_Option_Left.Position=U2(0,-1,0,4)Page_Option_Left.Size=U2(0,2,1,-8)Page_Option_Left.ZIndex=10002
 
         do
             Page_Option.MouseButton1Click:Connect(function()
@@ -1744,7 +1744,7 @@ Library.NewWindow = function(window_info)
 
                     local TOGGLED = Options[i]
                     if TOGGLED then
-                        Option.BackgroundColor3 = WinTheme.DarkAccent
+                        Option.BackgroundColor3 = WinTheme.Dark_Accent
                     else
                         Option.BackgroundColor3 = RGB(0, 0, 0)
                     end
@@ -1753,7 +1753,7 @@ Library.NewWindow = function(window_info)
                         TOGGLED = not TOGGLED
                         Options[i] = TOGGLED
                         if TOGGLED then
-                            Option.BackgroundColor3 = WinTheme.DarkAccent
+                            Option.BackgroundColor3 = WinTheme.Dark_Accent
                         else
                             Option.BackgroundColor3 = RGB(0, 0, 0)
                         end
@@ -1863,7 +1863,7 @@ Library.NewWindow = function(window_info)
                         local TOGGLED = false
                         player_table[player_name] = TOGGLED
                         if TOGGLED then
-                            Option.BackgroundColor3 = WinTheme.DarkAccent
+                            Option.BackgroundColor3 = WinTheme.Dark_Accent
                         else
                             Option.BackgroundColor3 = RGB(0, 0, 0)
                         end
@@ -1873,7 +1873,7 @@ Library.NewWindow = function(window_info)
                             player_table[player_name] = TOGGLED
                             
                             if TOGGLED then
-                                Option.BackgroundColor3 = WinTheme.DarkAccent
+                                Option.BackgroundColor3 = WinTheme.Dark_Accent
                             else
                                 Option.BackgroundColor3 = RGB(0, 0, 0)
                             end
@@ -1928,7 +1928,7 @@ Library.NewWindow = function(window_info)
                         local TOGGLED = false
                         player_table[player_name] = TOGGLED
                         if TOGGLED then
-                            Option.BackgroundColor3 = WinTheme.DarkAccent
+                            Option.BackgroundColor3 = WinTheme.Dark_Accent
                         else
                             Option.BackgroundColor3 = RGB(0, 0, 0)
                         end
@@ -1938,7 +1938,7 @@ Library.NewWindow = function(window_info)
                             player_table[player_name] = TOGGLED
                             
                             if TOGGLED then
-                                Option.BackgroundColor3 = WinTheme.DarkAccent
+                                Option.BackgroundColor3 = WinTheme.Dark_Accent
                             else
                                 Option.BackgroundColor3 = RGB(0, 0, 0)
                             end
