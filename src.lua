@@ -91,6 +91,9 @@ local UI_Inset = game:GetService("GuiService"):GetGuiInset()
 
 local MUTEX = false -- Mutual Exclusion VARIABLE
 
+local HorizontalSize    = 'rbxassetid://8943647369'
+local VerticalSize      = 'rbxassetid://8943646025'
+
 local ColorModule = {}
 function ColorModule:rgbToHsv(r, g, b)
     r, g, b = r / 255, g / 255, b / 255
@@ -404,24 +407,28 @@ Library.NewWindow = function(window_info)
 
         ResizeX.MouseEnter:Connect(function(ags)
             ResizeX.BackgroundColor3 = WinTheme.Accent;
+            Mouse.Icon = HorizontalSize
             infoMessage("Scales the Window (X)")
         end)
 
         ResizeX.MouseLeave:Connect(function(ags)
             if not Mouse_Scaling_X then
                 ResizeX.BackgroundColor3 = WinTheme.DarkAccent
+                Mouse.Icon = ""
                 resetMessage()
             end
         end)
 
         ResizeY.MouseEnter:Connect(function(ags)
             ResizeY.BackgroundColor3 = WinTheme.Accent;
+            Mouse.Icon = VerticalSize
             infoMessage("Scales the Window (Y)")
         end)
 
         ResizeY.MouseLeave:Connect(function(ags)
             if not Mouse_Scaling_Y then
                 ResizeY.BackgroundColor3 = WinTheme.DarkAccent
+                Mouse.Icon = ""
                 resetMessage()
             end
         end)
