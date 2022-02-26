@@ -151,7 +151,7 @@ for i = 1, 5 do
     Window.NewNotification({
         Title = "Ring-Ring",
         Body = "Hello, your pizza delivery is here ! That'll be a total of 5.50 $ ...",
-        Time = math.random(0.1, 5)
+        Time = math.random(2, 10)
     })
     task.wait(0.2)
 end
