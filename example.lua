@@ -20,6 +20,7 @@ local Window = Library.NewWindow({
     WindowPosition = Vector2.new(400, 200), -- Initial Position of the Window
 
     ThemeOverrides = Overrides,
+    Scalable = true, -- Default : True
     
     -- WindowSizeCallback will fire everytime the user changes the size of the UI, 
     -- you can use this to save the size into a config system for example
@@ -125,7 +126,7 @@ local Chipset = Section.NewChipset({
     Text = "Select Me", 
     Callback = function(tbl)
         print("New Options:")
-        for i,v in next, tbl do
+        for i,v in pairs(tbl) do
             print("    " .. tostring(i) .. ": " .. tostring(v))
         end
     end, 
@@ -145,3 +146,12 @@ local PlayerList = Section.NewPlayerChipset({
     end, 
     Description = "Select individual players from this auto-updating list of players !"
 })
+
+for i = 1, 5 do
+    Window.NewNotification({
+        Title = "Ring-Ring",
+        Body = "Hello, your pizza delivery is here ! That'll be a total of 5.50 $ ...",
+        Time = math.random(0.1, 5)
+    })
+	WAIT(0.2)
+end
