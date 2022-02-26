@@ -10,7 +10,7 @@ local Overrides = {
     Text_Color = Color3.fromRGB(235, 235, 235),
 
     Accent = Color3.fromRGB(255, 81, 0),
-    DarkAccent = Color3.fromRGB(140, 45, 0),
+    Dark_Accent = Color3.fromRGB(140, 45, 0),
 }
 
 local Window = Library.NewWindow({
@@ -19,7 +19,7 @@ local Window = Library.NewWindow({
     WindowSize = Vector2.new(550, 450),     -- Initial Size of the Window
     WindowPosition = Vector2.new(400, 200), -- Initial Position of the Window
 
-    ThemeOverrides = Overrides,
+    -- ThemeOverrides = Overrides,
     
     -- WindowSizeCallback will fire everytime the user changes the size of the UI, 
     -- you can use this to save the size into a config system for example
@@ -71,7 +71,7 @@ local TextBox = Section.NewTextBox({
     Description = "Type anything in this box !",
 
     OnlyNumeric = true,         -- Only Allow Numeric Output (Numbers)
-    -- OnlyAlphabetic = true    -- Only Allow Alphabetic Output (Alphabet)
+    -- OnlyAlphabetic = true    -- Only Allow Alphabetic Output (Letters)
 })
 
 local Slider = Section.NewSlider({
