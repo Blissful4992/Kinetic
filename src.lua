@@ -2079,7 +2079,7 @@ Library.NewWindow = function(window_info)
     return root
 end
 
--- return Library
+return Library
 
 -- local Overrides = {
 --     Background = Color3.fromRGB(23, 30, 51),
