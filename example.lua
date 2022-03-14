@@ -1,5 +1,4 @@
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Blissful4992/Kinetic/main/src.lua"))()
-
 local Overrides = {
     Background = Color3.fromRGB(23, 30, 51),
     Section_Background = Color3.fromRGB(18, 23, 38),
@@ -39,6 +38,8 @@ local Window = Library.NewWindow({
         print("You closed the script !")
     end
 })
+
+local Prompt = Window.NewPrompt({})
 
 local Page = Window.NewPage({Text = "Page 1"})
 
@@ -155,3 +156,73 @@ for i = 1, 5 do
     })
     task.wait(0.2)
 end
+
+local Page2 = Window.NewPage({Text = "Page 2"})
+
+local Section2 = Page2.NewSection({Text = "Section 2"})
+
+local Overrides = {}
+
+Section2.NewColorPicker({
+    Text = "Background", 
+    Callback = function(color)
+        Overrides.Background = color
+    end, 
+    Default = Window.WinTheme.Background
+})
+
+Section2.NewColorPicker({
+    Text = "Section Background", 
+    Callback = function(color)
+        Overrides.Section_Background = color
+    end, 
+    Default = Window.WinTheme.Section_Background
+})
+
+Section2.NewColorPicker({
+    Text = "Accent", 
+    Callback = function(color)
+        Overrides.Accent = color
+    end, 
+    Default = Window.WinTheme.Accent
+})
+
+Section2.NewColorPicker({
+    Text = "Dark Accent", 
+    Callback = function(color)
+        Overrides.Dark_Accent = color
+    end, 
+    Default = Window.WinTheme.Dark_Accent
+})
+
+Section2.NewColorPicker({
+    Text = "Light Borders", 
+    Callback = function(color)
+        Overrides.Light_Borders = color
+    end, 
+    Default = Window.WinTheme.Light_Borders
+})
+
+Section2.NewColorPicker({
+    Text = "Dark Borders", 
+    Callback = function(color)
+        Overrides.Dark_Borders = color
+    end, 
+    Default = Window.WinTheme.Dark_Borders
+})
+
+Section2.NewButton({
+    Text = "Update Theme", 
+    Callback = function()
+        Window.OverrideTheme(Overrides)
+    end
+})
+
+local ResetThemeButton = Window.NewUniversalButton({
+    Text = "Reset Theme", 
+    Callback = function()
+        print("Resetted !")
+        Window.ResetTheme()
+    end, 
+    Description = "This can be clicked multiple times !"
+})
