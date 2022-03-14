@@ -35,6 +35,8 @@ local CF = CFrame.new
 local WRAP = coroutine.wrap
 local NEW = Instance.new
 local TBINSERT = table.insert
+local TBREMOVE = table.remove
+local TBFIND = table.find
 --
 local COLOR_SEQUENCE = ColorSequence.new
 local COLOR_KEYPOINT = ColorSequenceKeypoint.new
@@ -71,12 +73,9 @@ end
 --
 
 local Library = {}
-local DESTROY_UI = false
 
 --
 local UI_Inset = game:GetService("GuiService"):GetGuiInset()
-
-local MUTEX = false -- Mutual Exclusion VARIABLE
 
 -- Cached Enums
 local UIT = Enum.UserInputType
@@ -92,10 +91,13 @@ local SOLO = Enum.SortOrder.LayoutOrder
 
 local EDO = Enum.EasingDirection.Out
 local ESS = Enum.EasingStyle.Sine
---
 
 local HorizontalSizeId    = 'rbxassetid://8943647369'
 local VerticalSizeId      = 'rbxassetid://8943646025'
+local DiagonalSizeId      = 'rbxassetid://9063724353'
+
+local PlusIcon = "rbxassetid://7275743788"
+local MinIcon = "rbxassetid://7247993381"
 
 local ColorModule = {}
 function ColorModule:rgbToHsv(r, g, b)
@@ -219,47 +221,66 @@ local function Protect_GUI(UI)
         UI.Parent=game:GetService("CoreGui")
     end
 end
---
-
-local WinTheme = {
-    Background = RGB(30, 30, 30),
-
-    Dark_Borders = RGB(25, 25, 25),
-    Light_Borders = RGB(255, 255, 255),
-
-    Text_Color = RGB(255, 255, 255),
-    Text_Size_Big = 14,
-    Text_Size_Medium = 12,
-    Text_Size_Small = 10,
-
-    Section_Background = RGB(25, 25, 25),
-
-    Accent = RGB(0, 255, 0),
-    Dark_Accent = RGB(0, 100, 0)
-}
 
 --
+local function Count(t)
+    local c = 0
+    for _ in pairs(t) do c = c + 1 end
+    return c
+end
+
+local function isDestroyed(obj)
+	if obj.Parent then return false end
+	local _,res = pcall(function() obj.Parent = obj end)
+	return res:match("locked") and true or false
+end
 
 Library.NewWindow = function(window_info)
     window_info.CloseCallback = window_info.CloseCallback or function()end
 
-    window_info.WindowSizeCallback = window_info.WindowSizeCallback or function(x,y)end
+    window_info.WindowSizeCallback = window_info.WindowSizeCallback or function()end
     window_info.WindowSize = window_info.WindowSize or V2(557, 500)
 
-    window_info.WindowPositionCallback = window_info.WindowPositionCallback or function(x,y)end 
+    window_info.WindowPositionCallback = window_info.WindowPositionCallback or function()end 
     window_info.WindowPosition = window_info.WindowPosition or V2(500, 300)
 
     window_info.ThemeOverrides = window_info.ThemeOverrides or {}
 
     window_info.Scalable = (window_info.Scalable == nil and true) or window_info.Scalable
 
+    local window = {
+        ThemeUpdates = {},
+        DefaultTheme = {},
+        WinTheme = {
+            Background = RGB(30, 30, 30),
+        
+            Dark_Borders = RGB(25, 25, 25),
+            Light_Borders = RGB(255, 255, 255),
+        
+            Text_Color = RGB(255, 255, 255),
+            Text_Size_Big = 14,
+            Text_Size_Medium = 12,
+            Text_Size_Small = 10,
+        
+            Section_Background = RGB(25, 25, 25),
+        
+            Accent = RGB(0, 255, 0),
+            Dark_Accent = RGB(0, 100, 0)
+        }
+    }
+    local DESTROY_UI = false;
+
     --
 
-    for i, v in pairs(window_info.ThemeOverrides) do
-        if WinTheme[i] and WinTheme[i] ~= v then
-            WinTheme[i] = v
+    for i,o in pairs(window.WinTheme) do
+        window.DefaultTheme[i] = o
+    end
+    for i,o in pairs(window_info.ThemeOverrides) do
+        if window.WinTheme[i] and window.WinTheme[i] ~= o then
+            window.WinTheme[i] = o
         end
     end
+
     --
 
     local UI = NEW("ScreenGui")
@@ -283,30 +304,63 @@ Library.NewWindow = function(window_info)
     local Pages = NEW("Frame")
     local Picker_Windows = NEW("Frame")
 
-    UI.Name="UI"
-
-    Protect_GUI(UI)
-
-    UI.ZIndexBehavior = Enum.ZIndexBehavior.Global
-    UI.ResetOnSpawn=false;Window.Name="Window"Window.Parent=UI;Window.BackgroundColor3=RGB(255,255,255)Window.BackgroundTransparency=1.000;Window.Position=U2(0, window_info.WindowPosition.X, 0, window_info.WindowPosition.Y)Window.Size=U2(0,window_info.WindowSize.X,0,window_info.WindowSize.Y)Top_Bar.Name="Top_Bar"Top_Bar.Parent=Window;Top_Bar.Active=true;Top_Bar.BackgroundColor3=RGB(40,40,40)Top_Bar.BackgroundColor3=WinTheme.Background;Top_Bar.BorderColor3=WinTheme.Dark_Borders;Top_Bar.BorderSizePixel=2;Top_Bar.Size=U2(1,0,0,20)Top_Bar.ZIndex=10001;Title.Name="Title"Title.Parent=Top_Bar;Title.BackgroundColor3=RGB(255,255,255)Title.BackgroundTransparency=1.000;Title.Position=U2(0.5,0,0,0)Title.Size=U2(0,1,1,0)Title.ZIndex=10002;Title.Font=GTHM;Title.Text=window_info.Text or"Test Title"Title.TextColor3=WinTheme.Text_Color;Title.TextSize=WinTheme.Text_Size_Medium;Close.Name="Close"Close.Parent=Top_Bar;Close.BackgroundTransparency=1;Close.BackgroundColor3=WinTheme.Background;Close.BorderColor3=WinTheme.Accent;Close.BorderSizePixel=1;Close.Position=U2(1,-20,0,0)Close.Size=U2(0,20,0,20)Close.ZIndex=10005;Close.AutoButtonColor=false;Close.Image="rbxassetid://7246920077"Close_Left.Name="Close_Left"Close_Left.Parent=Close;Close_Left.BackgroundColor3=WinTheme.Background;Close_Left.BorderSizePixel=0;Close_Left.Size=U2(0,6,1,0)Close_Left.ZIndex=10006;Close_Right.Name="Close_Right"Close_Right.Parent=Close;Close_Right.BackgroundColor3=WinTheme.Background;Close_Right.BorderSizePixel=0;Close_Right.Position=U2(1,-6,0,0)Close_Right.Size=U2(0,6,1,0)Close_Right.ZIndex=10006;Minimize.Name="Minimize"Minimize.Parent=Top_Bar;Minimize.BackgroundTransparency=1;Minimize.BackgroundColor3=WinTheme.Background;Minimize.BorderColor3=WinTheme.Accent;Minimize.BorderSizePixel=1;Minimize.Position=U2(1,-41,0,0)Minimize.Size=U2(0,20,0,20)Minimize.ZIndex=10005;Minimize.AutoButtonColor=false;Minimize.Image="rbxassetid://7247993381"Minimize_Left.Name="Minimize_Left"Minimize_Left.Parent=Minimize;Minimize_Left.BackgroundColor3=WinTheme.Background;Minimize_Left.BorderSizePixel=0;Minimize_Left.Size=U2(0,6,1,0)Minimize_Left.ZIndex=10006;Minimize_Right.Name="Minimize_Right"Minimize_Right.Parent=Minimize;Minimize_Right.BackgroundColor3=WinTheme.Background;Minimize_Right.BorderSizePixel=0;Minimize_Right.Position=U2(1,-6,0,0)Minimize_Right.Size=U2(0,6,1,0)Minimize_Right.ZIndex=10006;Minimize_Top.Name="Minimize_Top"Minimize_Top.Parent=Minimize;Minimize_Top.BackgroundColor3=WinTheme.Background;Minimize_Top.BorderSizePixel=0;Minimize_Top.Size=U2(1,0,0,6)Minimize_Top.ZIndex=10006;Minimize_Bottom.Name="Minimize_Bottom"Minimize_Bottom.Parent=Minimize;Minimize_Bottom.BackgroundColor3=WinTheme.Background;Minimize_Bottom.BorderSizePixel=0;Minimize_Bottom.Position=U2(0,0,1,-6)Minimize_Bottom.Size=U2(1,0,0,6)Minimize_Bottom.ZIndex=10006;Page_Selector.Name="Page_Selector"Page_Selector.Parent=Window;Page_Selector.Active=true;Page_Selector.BackgroundColor3=WinTheme.Background;Page_Selector.BorderColor3=WinTheme.Dark_Borders;Page_Selector.BorderSizePixel=2;Page_Selector.Position=U2(0,0,0,22)Page_Selector.Size=U2(1,0,0,32)Page_Selector.ZIndex=10000;Page_Selector.CanvasSize=U2(0,0,0,0)Page_Selector.AutomaticCanvasSize=Enum.AutomaticSize.X;Page_Selector.ScrollBarThickness=0;Page_List_Layout.Name="Page_List_Layout"Page_List_Layout.Parent=Page_Selector;Page_List_Layout.Padding=U1(0,0)Page_List_Layout.FillDirection=Enum.FillDirection.Horizontal;Page_List_Layout.HorizontalAlignment=Enum.HorizontalAlignment.Center;Page_List_Layout.SortOrder=SOLO;Main.Name="Main"Main.Parent=Window;Main.BackgroundColor3=WinTheme.Background;Main.BorderColor3=WinTheme.Dark_Borders;Main.BorderSizePixel=2;Main.Position=U2(0,0,0,55)Main.Size=U2(1,0,1,-55)Manager.Name="Manager"Manager.Parent=Main;Manager.BackgroundColor3=RGB(255,255,255)Manager.BackgroundTransparency=1.000;Manager.Position=U2(0,0,1,-60)Manager.Size=U2(1,0,0,60)Manager_Border.Name="Manager_Border"Manager_Border.Parent=Manager;Manager_Border.BackgroundColor3=WinTheme.Dark_Borders;Manager_Border.BorderSizePixel=0;Manager_Border.Position=U2(0,9,0,-1)Manager_Border.Size=U2(1,-18,0,2)Picker_Windows.Name="Picker_Windows"Picker_Windows.Parent=UI;Picker_Windows.BackgroundColor3=RGB(255,255,255)Picker_Windows.BackgroundTransparency=1.000;Picker_Windows.Size=U2(1,0,1,0)Feature_Info.Name="Feature_Info"Feature_Info.Parent=Manager;Feature_Info.BackgroundColor3=WinTheme.Dark_Borders;Feature_Info.BorderColor3=WinTheme.Dark_Borders;Feature_Info.BorderSizePixel=4;Feature_Info.Position=U2(0,9,1,-25)Feature_Info.Size=U2(1,-18,0,16)Feature_Info.Font=GTHM;Feature_Info.Text="This will turn ESP on/off"Feature_Info.TextColor3=WinTheme.Text_Color;Feature_Info.TextSize=WinTheme.Text_Size_Medium;Feature_Info.TextTruncate=Enum.TextTruncate.AtEnd;Feature_Info.TextXAlignment=TXAL
-
-    Pages.Name = "Pages"Pages.Parent = Main;Pages.BackgroundColor3 = RGB(255, 255, 255);Pages.BackgroundTransparency = 1.000;Pages.Size = U2(1, 0, 1, -60)
-
-
-    local root = {}
-
-    function root.InfoMessage(text)
+    function window.InfoMessage(text)
         RStepped:Wait()
         Feature_Info.Text = text
     end
-    function root.ResetMessage()
-        root.InfoMessage("")
+    function window.ResetMessage()
+        window.InfoMessage("")
     end
 
+    function window.NewThemeUpdater(list, action)
+        TBINSERT(window.ThemeUpdates, action)
+    end
+    function window.OverrideTheme(overrides)
+        if not overrides or Count(overrides) == 0 then return end
+
+        for i,o in pairs(overrides) do
+            if window.WinTheme[i] and window.WinTheme[i] ~= o then
+                window.WinTheme[i] = o
+            end
+        end
+
+        window.UpdateTheme()
+    end
+    function window.UpdateTheme()
+        for i,o in pairs(window.ThemeUpdates) do
+            o()
+        end
+    end
+    function window.ResetTheme()
+        for i,o in pairs(window.WinTheme) do
+            window.WinTheme[i] = window.DefaultTheme[i]
+        end
+
+        window.UpdateTheme()
+    end
+
+    local lastCPZIndex = 100000
+
+    UI.Name="UI"
+
+    -- Protect_GUI(UI)
+    UI.Parent = game.CoreGui
+
+    UI.ZIndexBehavior = Enum.ZIndexBehavior.Global
+    UI.ResetOnSpawn=false;Window.Name="Window"Window.Parent=UI;Window.BackgroundColor3=RGB(255,255,255)Window.BackgroundTransparency=1.000;Window.Position=U2(0, window_info.WindowPosition.X, 0, window_info.WindowPosition.Y)Window.Size=U2(0,window_info.WindowSize.X,0,window_info.WindowSize.Y)Top_Bar.Name="Top_Bar"Top_Bar.Parent=Window;Top_Bar.Active=true;Top_Bar.BackgroundColor3=RGB(40,40,40)Top_Bar.BackgroundColor3=window.WinTheme.Background;Top_Bar.BorderColor3=window.WinTheme.Dark_Borders;Top_Bar.BorderSizePixel=2;Top_Bar.Size=U2(1,0,0,20)Top_Bar.ZIndex=10001;Title.Name="Title"Title.Parent=Top_Bar;Title.BackgroundColor3=RGB(255,255,255)Title.BackgroundTransparency=1.000;Title.Position=U2(0.5,0,0,0)Title.Size=U2(0,1,1,0)Title.ZIndex=10002;Title.Font=GTHM;Title.Text=window_info.Text or"Test Title"Title.TextColor3=window.WinTheme.Text_Color;Title.TextSize=window.WinTheme.Text_Size_Medium;Close.Name="Close"Close.Parent=Top_Bar;Close.BackgroundTransparency=1;Close.BackgroundColor3=window.WinTheme.Background;Close.BorderColor3=window.WinTheme.Accent;Close.BorderSizePixel=1;Close.Position=U2(1,-20,0,0)Close.Size=U2(0,20,0,20)Close.ZIndex=10005;Close.AutoButtonColor=false;Close.Image="rbxassetid://7246920077"Close_Left.Name="Close_Left"Close_Left.Parent=Close;Close_Left.BackgroundColor3=window.WinTheme.Background;Close_Left.BorderSizePixel=0;Close_Left.Size=U2(0,6,1,0)Close_Left.ZIndex=10006;Close_Right.Name="Close_Right"Close_Right.Parent=Close;Close_Right.BackgroundColor3=window.WinTheme.Background;Close_Right.BorderSizePixel=0;Close_Right.Position=U2(1,-6,0,0)Close_Right.Size=U2(0,6,1,0)Close_Right.ZIndex=10006;Minimize.Name="Minimize"Minimize.Parent=Top_Bar;Minimize.BackgroundTransparency=1;Minimize.BackgroundColor3=window.WinTheme.Background;Minimize.BorderColor3=window.WinTheme.Accent;Minimize.BorderSizePixel=1;Minimize.Position=U2(1,-41,0,0)Minimize.Size=U2(0,20,0,20)Minimize.ZIndex=10005;Minimize.AutoButtonColor=false;Minimize.Image=MinIcon;Minimize_Left.Name="Minimize_Left"Minimize_Left.Parent=Minimize;Minimize_Left.BackgroundColor3=window.WinTheme.Background;Minimize_Left.BorderSizePixel=0;Minimize_Left.Size=U2(0,6,1,0)Minimize_Left.ZIndex=10006;Minimize_Right.Name="Minimize_Right"Minimize_Right.Parent=Minimize;Minimize_Right.BackgroundColor3=window.WinTheme.Background;Minimize_Right.BorderSizePixel=0;Minimize_Right.Position=U2(1,-6,0,0)Minimize_Right.Size=U2(0,6,1,0)Minimize_Right.ZIndex=10006;Minimize_Top.Name="Minimize_Top"Minimize_Top.Parent=Minimize;Minimize_Top.BackgroundColor3=window.WinTheme.Background;Minimize_Top.BorderSizePixel=0;Minimize_Top.Size=U2(1,0,0,6)Minimize_Top.ZIndex=10006;Minimize_Bottom.Name="Minimize_Bottom"Minimize_Bottom.Parent=Minimize;Minimize_Bottom.BackgroundColor3=window.WinTheme.Background;Minimize_Bottom.BorderSizePixel=0;Minimize_Bottom.Position=U2(0,0,1,-6)Minimize_Bottom.Size=U2(1,0,0,6)Minimize_Bottom.ZIndex=10006;Page_Selector.Name="Page_Selector"Page_Selector.Parent=Window;Page_Selector.Active=true;Page_Selector.BackgroundColor3=window.WinTheme.Background;Page_Selector.BorderColor3=window.WinTheme.Dark_Borders;Page_Selector.BorderSizePixel=2;Page_Selector.Position=U2(0,0,0,22)Page_Selector.Size=U2(1,0,0,32)Page_Selector.ZIndex=10000;Page_Selector.CanvasSize=U2(0,0,0,0)Page_Selector.AutomaticCanvasSize=Enum.AutomaticSize.X;Page_Selector.ScrollBarThickness=0;Page_List_Layout.Name="Page_List_Layout"Page_List_Layout.Parent=Page_Selector;Page_List_Layout.Padding=U1(0,0)Page_List_Layout.FillDirection=Enum.FillDirection.Horizontal;Page_List_Layout.HorizontalAlignment=Enum.HorizontalAlignment.Center;Page_List_Layout.SortOrder=SOLO;Main.Name="Main"Main.Parent=Window;Main.BackgroundColor3=window.WinTheme.Background;Main.BorderColor3=window.WinTheme.Dark_Borders;Main.BorderSizePixel=2;Main.Position=U2(0,0,0,55)Main.Size=U2(1,0,1,-55)Manager.Name="Manager"Manager.Parent=Main;Manager.BackgroundColor3=RGB(255,255,255)Manager.BackgroundTransparency=1.000;Manager.Position=U2(0,0,1,-60)Manager.Size=U2(1,0,0,60)Manager_Border.Name="Manager_Border"Manager_Border.Parent=Manager;Manager_Border.BackgroundColor3=window.WinTheme.Dark_Borders;Manager_Border.BorderSizePixel=0;Manager_Border.Position=U2(0,5,0,-1)Manager_Border.Size=U2(1,-9,0,2)Picker_Windows.Name="Picker_Windows"Picker_Windows.Parent=UI;Picker_Windows.BackgroundColor3=RGB(255,255,255)Picker_Windows.BackgroundTransparency=1.000;Picker_Windows.Size=U2(1,0,1,0)Feature_Info.Name="Feature_Info"Feature_Info.Parent=Manager;Feature_Info.BackgroundColor3=window.WinTheme.Dark_Borders;Feature_Info.BorderColor3=window.WinTheme.Dark_Borders;Feature_Info.BorderSizePixel=4;Feature_Info.Position=U2(0,9,1,-25)Feature_Info.Size=U2(1,-18,0,16)Feature_Info.Font=GTHM;Feature_Info.Text="This will turn ESP on/off"Feature_Info.TextColor3=window.WinTheme.Text_Color;Feature_Info.TextSize=window.WinTheme.Text_Size_Medium;Feature_Info.TextTruncate=Enum.TextTruncate.AtEnd;Feature_Info.TextXAlignment=TXAL
+
+    window.NewThemeUpdater({Top_Bar, Title, Close, Close_Left, Close_Right, Minimize, Minimize_Left, Minimize_Right, Minimize_Top, Minimize_Bottom, Page_Selector, Main, Manager_Border, Feature_Info}, function()
+        Top_Bar.BackgroundColor3=window.WinTheme.Background;Top_Bar.BorderColor3=window.WinTheme.Dark_Borders;Title.TextColor3=window.WinTheme.Text_Color;Title.TextSize=window.WinTheme.Text_Size_Medium;Close.BackgroundColor3=window.WinTheme.Background;Close.BorderColor3=window.WinTheme.Accent;Close_Left.BackgroundColor3=window.WinTheme.Background;Close_Right.BackgroundColor3=window.WinTheme.Background;Minimize.BackgroundColor3=window.WinTheme.Background;Minimize.BorderColor3=window.WinTheme.Accent;Minimize_Left.BackgroundColor3=window.WinTheme.Background;Minimize_Right.BackgroundColor3=window.WinTheme.Background;Minimize_Top.BackgroundColor3=window.WinTheme.Background;Minimize_Bottom.BackgroundColor3=window.WinTheme.Background;Page_Selector.BackgroundColor3=window.WinTheme.Background;Page_Selector.BorderColor3=window.WinTheme.Dark_Borders;Main.BackgroundColor3=window.WinTheme.Background;Main.BorderColor3=window.WinTheme.Dark_Borders;Manager_Border.BackgroundColor3=window.WinTheme.Dark_Borders;Feature_Info.BackgroundColor3=window.WinTheme.Dark_Borders;Feature_Info.BorderColor3=window.WinTheme.Dark_Borders;Feature_Info.TextColor3=window.WinTheme.Text_Color;Feature_Info.TextSize=window.WinTheme.Text_Size_Medium
+    end)
+
+    local Top_Bar_Min = Title.TextBounds.X + 20*2 + 60
+
+    Pages.Name = "Pages"Pages.Parent = Main;Pages.BackgroundColor3 = RGB(255, 255, 255);Pages.BackgroundTransparency = 1.000;Pages.Size = U2(1, 0, 1, -60)
+    
     local prompt_Active = false
 
     local UI_Toggled = true
-    function root.Toggle(state)
+    function window.Toggle(state)
         if not prompt_Active then
             UI_Toggled = state or not UI_Toggled
             Window.Visible = state or UI_Toggled
@@ -314,7 +368,7 @@ Library.NewWindow = function(window_info)
         end
     end
 
-    function root.Destroy()
+    function window.Destroy()
         DESTROY_UI = true
         UI:Destroy()
     end
@@ -332,9 +386,9 @@ Library.NewWindow = function(window_info)
         Cursor.BackgroundTransparency = 1
 
         --
-
         local Cursor_Lock = function()
             if DESTROY_UI then
+                Cursor:Destroy()
                 RS:UnbindFromRenderStep("CursorLock")
             else
                 Cursor.Position = U2(0, Mouse.X-Cursor.AbsoluteSize.X/2, 0, Mouse.Y-Cursor.AbsoluteSize.Y/2)
@@ -366,9 +420,9 @@ Library.NewWindow = function(window_info)
             Main.Visible = not Minimized
 
             if Main.Visible then
-                Minimize.Image = "rbxassetid://7247993381"
+                Minimize.Image = MinIcon
             else
-                Minimize.Image = "rbxassetid://7275743788"
+                Minimize.Image = PlusIcon
             end
         end
 
@@ -377,39 +431,39 @@ Library.NewWindow = function(window_info)
         Minimize.MouseEnter:Connect(function()
             Minimize.ZIndex = 10006
             Minimize.BackgroundTransparency = 0
-            Minimize.ImageColor3 = WinTheme.Accent;
+            Minimize.ImageColor3 = window.WinTheme.Accent;
 
-            root.InfoMessage("Minimizes the Window")
+            window.InfoMessage("Minimizes the Window")
         end)
     
         Minimize.MouseLeave:Connect(function()
-            root.ResetMessage()
+            window.ResetMessage()
 
             Minimize.ZIndex = 10005
             Minimize.BackgroundTransparency = 1
             Minimize.ImageColor3 = RGB(255, 255, 255)
         end)
 
-        root.Minimize = Minimize_UI
+        window.Minimize = Minimize_UI
     end
 
     do -- CLOSE
 
         Close.MouseButton1Click:Connect(function()
             window_info.CloseCallback()
-            root.Destroy()
+            window.Destroy()
         end)
 
         Close.MouseEnter:Connect(function()
             Close.ZIndex = 10006
             Close.BackgroundTransparency = 0
-            Close.ImageColor3 = WinTheme.Accent;
+            Close.ImageColor3 = window.WinTheme.Accent;
 
-            root.InfoMessage("Kills the Window")
+            window.InfoMessage("Kills the Window")
         end)
     
         Close.MouseLeave:Connect(function()
-            root.ResetMessage()
+            window.ResetMessage()
 
             Close.ZIndex = 10005
             Close.BackgroundTransparency = 1
@@ -422,6 +476,7 @@ Library.NewWindow = function(window_info)
         local Previous_Offset
 
         local dragTween = false;
+        local previousPos = V2(Window.AbsolutePosition.X, Window.AbsolutePosition.Y)
 
         local drag; drag = UIS.InputChanged:Connect(function(input)
             if DESTROY_UI then
@@ -433,7 +488,13 @@ Library.NewWindow = function(window_info)
                 dragTween = TS:Create(Window, TWEEN(0.04, ESS, EDO), {Position = U2(0, Mouse.X + Previous_Offset.X, 0, Mouse.Y + Previous_Offset.Y)})
                 dragTween:Play()
 
-                window_info.WindowPositionCallback(V2(Window.AbsolutePosition.X, Window.AbsolutePosition.Y))
+                local newPos = V2(Window.AbsolutePosition.X, Window.AbsolutePosition.Y)
+
+                if newPos ~= previousPos then
+                    window_info.WindowPositionCallback(newPos)
+                end
+
+                previousPos = newPos
             end
         end)
 
@@ -453,43 +514,68 @@ Library.NewWindow = function(window_info)
                 Dragging_UI = false
             end
         end)
+
+        function window.SetPosition(position)
+            Window.Position = U2(0, position.X, 0, position.Y)
+            window_info.WindowPositionCallback(position)
+        end
     end
 
+    function window.SetPosition(position)
+        Window.Position = U2(0, position.X, 0, position.Y)
+        window_info.WindowPositionCallback(position)
+    end
+    function window.GetPosition()
+        return V2(Window.AbsolutePosition.X, Window.AbsolutePosition.Y)
+    end
+    
     if (window_info.Scalable) then
         do -- WINDOW SCALING
             local ResizeX = NEW("TextButton")
             local ResizeY = NEW("TextButton")
+            local ResizeXY = NEW("TextButton")
 
-            ResizeX.Name="ResizeX"ResizeX.Parent=Window;ResizeX.AutoButtonColor=false;ResizeX.BackgroundColor3=WinTheme.Dark_Accent;ResizeX.BackgroundTransparency=0;ResizeX.Position=U2(1,-2,0,27)ResizeX.BorderSizePixel=0;ResizeX.Size=U2(0,2,1,-32)ResizeX.ZIndex=100000;ResizeX.Font=GTHM;ResizeX.Text=""ResizeX.TextColor3=RGB(0,0,0)ResizeX.TextSize=WinTheme.Text_Size_Medium;ResizeX.Visible=true;ResizeY.Name="ResizeY"ResizeY.Parent=Window;ResizeY.AutoButtonColor=false;ResizeY.BackgroundColor3=WinTheme.Dark_Accent;ResizeY.BorderSizePixel=0;ResizeY.BackgroundTransparency=0;ResizeY.Position=U2(0,5,1,-2)ResizeY.Size=U2(1,-10,0,2)ResizeY.ZIndex=100000;ResizeY.Font=GTHM;ResizeY.Text=""ResizeY.TextColor3=RGB(0,0,0)ResizeY.TextSize=WinTheme.Text_Size_Big;ResizeY.Visible=true
+            ResizeX.Name="ResizeX"ResizeX.Parent=Window;ResizeX.AutoButtonColor=false;ResizeX.BackgroundColor3=window.WinTheme.Dark_Accent;ResizeX.BackgroundTransparency=0;ResizeX.Position=U2(1,-2,0,27)ResizeX.BorderSizePixel=0;ResizeX.Size=U2(0,2,1,-36)ResizeX.ZIndex=100000;ResizeX.Font=GTHM;ResizeX.Text=""ResizeX.TextColor3=RGB(0,0,0)ResizeX.TextSize=window.WinTheme.Text_Size_Medium;ResizeX.Visible=true;ResizeY.Name="ResizeY"ResizeY.Parent=Window;ResizeY.AutoButtonColor=false;ResizeY.BackgroundColor3=window.WinTheme.Dark_Accent;ResizeY.BorderSizePixel=0;ResizeY.BackgroundTransparency=0;ResizeY.Position=U2(0,5,1,-2)ResizeY.Size=U2(1,-14,0,2)ResizeY.ZIndex=100000;ResizeY.Font=GTHM;ResizeY.Text=""ResizeY.TextColor3=RGB(0,0,0)ResizeY.TextSize=window.WinTheme.Text_Size_Big;ResizeY.Visible=true
+
+            window.NewThemeUpdater({ResizeX, ResizeY}, function()
+                ResizeX.BackgroundColor3 = window.WinTheme.Dark_Accent;
+                ResizeX.TextSize = window.WinTheme.Text_Size_Medium;
+                ResizeY.BackgroundColor3 = window.WinTheme.Dark_Accent;
+                ResizeY.TextSize = window.WinTheme.Text_Size_Big;
+            end)
 
             local Mouse_Scaling_X = false
             local Mouse_Scaling_Y = false
 
             ResizeX.MouseEnter:Connect(function()
-                ResizeX.BackgroundColor3 = WinTheme.Accent;
-                Custom_Cursor.Show_Custom_Cursor(HorizontalSizeId)
-                root.InfoMessage("Scales the Window (Horizontal)")
+                if not Mouse_Scaling_Y then
+                    ResizeX.BackgroundColor3 = window.WinTheme.Accent;
+                    Custom_Cursor.Show_Custom_Cursor(HorizontalSizeId)
+                    window.InfoMessage("Scales the Window (Horizontal)")
+                end
             end)
 
             ResizeX.MouseLeave:Connect(function()
-                if not Mouse_Scaling_X then
-                    ResizeX.BackgroundColor3 = WinTheme.Dark_Accent
+                if not Mouse_Scaling_Y and not Mouse_Scaling_X then
+                    ResizeX.BackgroundColor3 = window.WinTheme.Dark_Accent
                     Custom_Cursor.Hide_Custom_Cursor()
-                    root.ResetMessage()
+                    window.ResetMessage()
                 end
             end)
 
             ResizeY.MouseEnter:Connect(function()
-                ResizeY.BackgroundColor3 = WinTheme.Accent;
-                Custom_Cursor.Show_Custom_Cursor(VerticalSizeId)
-                root.InfoMessage("Scales the Window (Vertical)")
+                if not Mouse_Scaling_X then
+                    ResizeY.BackgroundColor3 = window.WinTheme.Accent;
+                    Custom_Cursor.Show_Custom_Cursor(VerticalSizeId)
+                    window.InfoMessage("Scales the Window (Vertical)")
+                end
             end)
 
             ResizeY.MouseLeave:Connect(function()
-                if not Mouse_Scaling_Y then
-                    ResizeY.BackgroundColor3 = WinTheme.Dark_Accent
+                if not Mouse_Scaling_Y and not Mouse_Scaling_X then
+                    ResizeY.BackgroundColor3 = window.WinTheme.Dark_Accent
                     Custom_Cursor.Hide_Custom_Cursor()
-                    root.ResetMessage()
+                    window.ResetMessage()
                 end
             end)
 
@@ -504,31 +590,85 @@ Library.NewWindow = function(window_info)
                     Mouse_Scaling_Y = true
                 end
             end)
+            
+            local Resize_Diag = NEW("Folder")
+
+            do -- Diagonal 
+                ResizeXY.Name = "ResizeXY"
+                ResizeXY.Parent = Window;
+                ResizeXY.AutoButtonColor = false;
+                ResizeXY.BackgroundColor3 = window.WinTheme.Dark_Accent;
+                ResizeXY.BackgroundTransparency = 0;
+                ResizeXY.Position = U2(1, -6, 1, -6)
+                ResizeXY.BorderSizePixel = 0;
+                ResizeXY.Size = U2(0, 6, 0, 6)
+                ResizeXY.ZIndex = 100000;
+                ResizeXY.Text = ""
+                ResizeXY.Visible = true;
+            
+                window.NewThemeUpdater({ResizeXY}, function()
+                    ResizeXY.BackgroundColor3 = window.WinTheme.Dark_Accent;
+                end)
+
+                --
+
+                ResizeXY.MouseEnter:Connect(function()
+                    if not Mouse_Scaling_Y and not Mouse_Scaling_X then
+                        ResizeXY.BackgroundColor3 = window.WinTheme.Accent
+
+                        Custom_Cursor.Show_Custom_Cursor(DiagonalSizeId)
+                        window.InfoMessage("Scales the Window")
+                    end
+                end)
+    
+                ResizeXY.MouseLeave:Connect(function()
+                    if not Mouse_Scaling_Y and not Mouse_Scaling_X then
+                        ResizeXY.BackgroundColor3 = window.WinTheme.Dark_Accent
+                        Custom_Cursor.Hide_Custom_Cursor()
+                        window.ResetMessage()
+                    end
+                end)
+
+                ResizeXY.MouseButton1Down:Connect(function()
+                    Mouse_Scaling_X = true
+                    Mouse_Scaling_Y = true
+                end)
+
+            end
 
             local Mouse_Connection; Mouse_Connection = UIS.InputEnded:Connect(function(input)
                 if DESTROY_UI then
                     Mouse_Connection:Disconnect()
                 elseif input.UserInputType == MB1 then
-                    if (Mouse_Scaling_X or Mouse_Scaling_Y) and not MouseIn(ResizeX) and not MouseIn(ResizeY) then
-                        root.ResetMessage()
+                    if (Mouse_Scaling_X or Mouse_Scaling_Y) and not MouseIn(ResizeX) and not MouseIn(ResizeY) and not MouseIn(ResizeXY) then
+                        window.ResetMessage()
                     end
 
                     if MouseIn(ResizeX) then
-                        ResizeX.BackgroundColor3 = WinTheme.Accent;
-                        root.InfoMessage("Scales the Window (Horizontal)")
-                    else
+                        ResizeX.BackgroundColor3 = window.WinTheme.Accent;
+                        window.InfoMessage("Scales the Window (Horizontal)")
+                    elseif Mouse_Scaling_X then
                         Custom_Cursor.Hide_Custom_Cursor()
-                        ResizeX.BackgroundColor3 = WinTheme.Dark_Accent
-                        root.ResetMessage()
+                        ResizeX.BackgroundColor3 = window.WinTheme.Dark_Accent
+                        window.ResetMessage()
                     end
                     
                     if MouseIn(ResizeY) then
-                        ResizeY.BackgroundColor3 = WinTheme.Accent;
-                        root.InfoMessage("Scales the Window (Vertical)")
-                    else
+                        ResizeY.BackgroundColor3 = window.WinTheme.Accent;
+                        window.InfoMessage("Scales the Window (Vertical)")
+                    elseif Mouse_Scaling_Y then
                         Custom_Cursor.Hide_Custom_Cursor()
-                        ResizeY.BackgroundColor3 = WinTheme.Dark_Accent
-                        root.ResetMessage()
+                        ResizeY.BackgroundColor3 = window.WinTheme.Dark_Accent
+                        window.ResetMessage()
+                    end
+
+                    if MouseIn(ResizeXY) then
+                        ResizeXY.BackgroundColor3 = window.WinTheme.Accent
+                        window.InfoMessage("Scales the Window")
+                    elseif Mouse_Scaling_Y or Mouse_Scaling_X then
+                        Custom_Cursor.Hide_Custom_Cursor()
+                        ResizeXY.BackgroundColor3 = window.WinTheme.Dark_Accent
+                        window.ResetMessage()
                     end
 
                     Mouse_Scaling_X = false
@@ -537,29 +677,34 @@ Library.NewWindow = function(window_info)
             end)
 
             local scalingBind = "CScaling"..random_string(10)
+            local previousSize = V2(Window.AbsoluteSize.X, Window.AbsoluteSize.Y)
 
-            local Scaling_Connection = function()
+            local Scaling_Connection; Scaling_Connection = function()
                 if DESTROY_UI then
                     RS:UnbindFromRenderStep(scalingBind)
-                elseif UI_Toggled and Minimized == false and Mouse_Scaling_Y then
-                    local offset_mouse = Mouse.Y - Window.AbsolutePosition.Y
+                elseif UI_Toggled and Minimized == false and (Mouse_Scaling_Y or Mouse_Scaling_X) then
 
-                    TS:Create(Window, TWEEN(0.05, ESS, EDO), {Size = U2(0, Window.AbsoluteSize.X, 0, CLAMP(offset_mouse, 300, HUGE))}):Play()
+                    local offset_mouseY = Mouse.Y - Window.AbsolutePosition.Y
+                    local offset_mouseX = Mouse.X - Window.AbsolutePosition.X
 
-                    window_info.WindowSizeCallback(V2(Window.AbsoluteSize.X, Window.AbsoluteSize.Y))
-                elseif UI_Toggled and Minimized == false and Mouse_Scaling_X then
-                    local offset_mouse = Mouse.X - Window.AbsolutePosition.X
+                    local new_Y = (Mouse_Scaling_Y and U1(0, CLAMP(offset_mouseY, 130, HUGE))) or U1(0, Window.AbsoluteSize.Y);
+                    local new_X = (Mouse_Scaling_X and U1(0, CLAMP(offset_mouseX, Top_Bar_Min, HUGE))) or U1(0, Window.AbsoluteSize.X);
 
-                    TS:Create(Window, TWEEN(0.05, ESS, EDO), {Size = U2(0, CLAMP(offset_mouse, 144, HUGE), 0, Window.AbsoluteSize.Y)}):Play()
+                    TS:Create(Window, TWEEN(0.05, ESS, EDO), {Size = U2(new_X, new_Y)}):Play()
 
-                    window_info.WindowSizeCallback(V2(Window.AbsoluteSize.X, Window.AbsoluteSize.Y))
+                    local newSize = V2(Window.AbsoluteSize.X, Window.AbsoluteSize.Y)
+                    if newSize ~= previousSize then window_info.WindowSizeCallback(newSize) end
+
+                    previousSize = newSize
+
                 else
                     if UI_Toggled == false or Minimized then
                         ResizeY.Visible = false
                         ResizeX.Visible = false
+                        ResizeXY.Visible = false
 
                         WRAP(function()
-                            repeat WAIT() until UI_Toggled and Minimized == false
+                            repeat WAIT() until UI_Toggled and not Minimized
                             RS:BindToRenderStep(scalingBind, 1, Scaling_Connection)
                         end)()
 
@@ -567,6 +712,7 @@ Library.NewWindow = function(window_info)
                     else
                         ResizeY.Visible = true
                         ResizeX.Visible = true
+                        ResizeXY.Visible = true
                     end
                 end
             end
@@ -575,29 +721,76 @@ Library.NewWindow = function(window_info)
         end
     end
 
-    do -- SAVE BUTTON
-        if window_info.SaveCallback ~= nil and type(window_info.SaveCallback) == "function" then
-            local Save_Button = NEW("TextButton")
+    function window.SetSize(size)
+        Window.Size = U2(0, size.X, 0, size.Y)
+        window_info.WindowPositionCallback(size)
+    end
+    function window.GetSize()
+        return V2(Window.AbsoluteSize.X, Window.AbsoluteSize.Y)
+    end
 
-            Save_Button.Name="Save_Button"Save_Button.Parent=Manager;Save_Button.BackgroundColor3=WinTheme.Dark_Borders;Save_Button.BorderColor3=WinTheme.Light_Borders;Save_Button.Position=U2(1,-56,0,7)Save_Button.Size=U2(0,50,0,18)Save_Button.AutoButtonColor=false;Save_Button.Font=GTHM;Save_Button.Text="Save"Save_Button.TextColor3=WinTheme.Text_Color;Save_Button.TextSize=WinTheme.Text_Size_Medium;Save_Button.TextWrapped=true
+    do -- UNIVERSAL BUTTON
+        local Button_Holder = NEW("ScrollingFrame")
+        local Button_List_Layout = NEW("UIListLayout")
 
-            Save_Button.MouseButton1Click:Connect(function()
-                window_info.SaveCallback()
+        Button_Holder.Name="Button_Holder"Button_Holder.Parent=Manager;Button_Holder.Active=true;Button_Holder.BackgroundTransparency=1;Button_Holder.Position=U2(0,7,0,6)Button_Holder.Size=U2(1,-13,0,20)Button_Holder.CanvasSize=U2(0,0,0,0)Button_Holder.AutomaticCanvasSize=Enum.AutomaticSize.X;Button_Holder.ScrollBarThickness=0;Button_List_Layout.Name="Button_List_Layout"Button_List_Layout.Parent=Button_Holder;Button_List_Layout.Padding=U1(0,4)Button_List_Layout.FillDirection=Enum.FillDirection.Horizontal;Button_List_Layout.HorizontalAlignment=Enum.HorizontalAlignment.Left;Button_List_Layout.SortOrder=SOLO
+        
+        function window.NewUniversalButton(info)
+            local Univ_Button = NEW("TextButton")
+
+            Univ_Button.Name="Univ_Button"Univ_Button.Parent=Button_Holder;Univ_Button.BackgroundColor3=window.WinTheme.Dark_Borders;Univ_Button.BorderColor3=window.WinTheme.Light_Borders;Univ_Button.AutoButtonColor=false;Univ_Button.Font=GTHM;Univ_Button.Text=info.Text or"Button"Univ_Button.BorderMode=Enum.BorderMode.Inset;Univ_Button.TextColor3=window.WinTheme.Text_Color;Univ_Button.TextSize=window.WinTheme.Text_Size_Medium
+
+            window.NewThemeUpdater({Univ_Button}, function()
+                Univ_Button.BackgroundColor3 = window.WinTheme.Dark_Borders;
+                Univ_Button.BorderColor3 = window.WinTheme.Light_Borders;
+                Univ_Button.TextColor3 = window.WinTheme.Text_Color;
+                Univ_Button.TextSize = window.WinTheme.Text_Size_Medium;
             end)
 
-            Save_Button.MouseEnter:Connect(function()
-                Save_Button.BorderColor3 = WinTheme.Accent;
-                Save_Button.TextColor3 = WinTheme.Accent;
+            local function UpdateSize()
+                Univ_Button.Size = U2(0, Univ_Button.TextBounds.X + 12, 1, 0)
+            end
+            UpdateSize()
+
+            Univ_Button.MouseButton1Click:Connect(function()
+                info.Callback()
+            end)
+
+            Univ_Button.MouseEnter:Connect(function()
+                Univ_Button.BorderColor3 = window.WinTheme.Accent;
+                Univ_Button.TextColor3 = window.WinTheme.Accent;
     
-                root.InfoMessage("Saves Global Settings")
+                window.InfoMessage(info.Description or "")
             end)
         
-            Save_Button.MouseLeave:Connect(function()
-                root.ResetMessage()
+            Univ_Button.MouseLeave:Connect(function()
+                window.ResetMessage()
     
-                Save_Button.BorderColor3 = WinTheme.Light_Borders;
-                Save_Button.TextColor3 = WinTheme.Text_Color;
+                Univ_Button.BorderColor3 = window.WinTheme.Light_Borders;
+                Univ_Button.TextColor3 = window.WinTheme.Text_Color;
             end)
+
+            local button_funcs = {}
+
+            function button_funcs.Fire(times)
+                for i = 1, times or 1 do
+                    info.Callback()
+                end
+            end
+
+            function button_funcs.SetText(text)
+                Univ_Button.Text = text or "Button"
+                UpdateSize()
+            end
+            function button_funcs.GetText()
+                return Univ_Button.Text
+            end
+
+            function button_funcs.ReplaceCallback(newfunc)
+                info.Callback = newfunc
+            end
+
+            return button_funcs
         end
     end
 
@@ -614,7 +807,11 @@ Library.NewWindow = function(window_info)
         local Prompt_Border = NEW("Frame")
         local Reject_Button = NEW("TextButton")
 
-        Prompt.Name="Prompt"Prompt.Parent=UI;Prompt_Blur.Name="Prompt_Blur"Prompt_Blur.Parent=Prompt;Prompt_Blur.BackgroundColor3=RGB(100,100,100)Prompt_Blur.BackgroundTransparency=0.8;Prompt_Blur.Size=U2(1,0,1,UI_Inset.Y)Prompt_Blur.Position=U2(0,0,0,-UI_Inset.Y)Prompt_Blur.BorderSizePixel=0;Prompt_Blur.ZIndex=1000000;Prompt_Blur.Visible=false;Prompt_Window.Name="Prompt_Window"Prompt_Window.Parent=Prompt;Prompt_Window.BackgroundColor3=RGB(255,255,255)Prompt_Window.BackgroundTransparency=1.000;Prompt_Window.BorderColor3=RGB(27,42,53)Prompt_Window.Position=U2(0.5,-180,0.5,-80)Prompt_Window.Size=U2(0,360,0,162)Prompt_Window.ZIndex=1000000;Prompt_Window.Visible=false;Prompt_Top_Bar.Name="Prompt_Top_Bar"Prompt_Top_Bar.Parent=Prompt_Window;Prompt_Top_Bar.BackgroundColor3=WinTheme.Background;Prompt_Top_Bar.BorderColor3=WinTheme.Dark_Borders;Prompt_Top_Bar.BorderSizePixel=2;Prompt_Top_Bar.Size=U2(1,0,0,20)Prompt_Top_Bar.ZIndex=1000001;Prompt_Title.Name="Prompt_Title"Prompt_Title.Parent=Prompt_Top_Bar;Prompt_Title.BackgroundColor3=RGB(255,255,255)Prompt_Title.BackgroundTransparency=1.000;Prompt_Title.Position=U2(0,5,0,0)Prompt_Title.Size=U2(0,1,1,0)Prompt_Title.ZIndex=1000002;Prompt_Title.Font=GTHM;Prompt_Title.Text="Prompt"Prompt_Title.TextColor3=WinTheme.Text_Color;Prompt_Title.TextSize=WinTheme.Text_Size_Medium;Prompt_Title.TextXAlignment=TXAL;Prompt_Main.Name="Prompt_Main"Prompt_Main.Parent=Prompt_Window;Prompt_Main.BackgroundColor3=WinTheme.Background;Prompt_Main.BorderColor3=WinTheme.Dark_Borders;Prompt_Main.BorderSizePixel=2;Prompt_Main.Position=U2(0,0,0,22)Prompt_Main.Size=U2(1,0,1,-22)Prompt_Main.ZIndex=1000001;Prompt_Body.Name="Prompt_Body"Prompt_Body.Parent=Prompt_Main;Prompt_Body.BackgroundColor3=WinTheme.Background;Prompt_Body.BorderSizePixel=0;Prompt_Body.Position=U2(0,5,0,10)Prompt_Body.Size=U2(1,-10,1,-44)Prompt_Body.ZIndex=1000002;Prompt_Body.Font=GTHM;Prompt_Body.RichText=true;Prompt_Body.Text=""Prompt_Body.TextColor3=WinTheme.Text_Color;Prompt_Body.TextSize=WinTheme.Text_Size_Medium;Prompt_Body.TextWrapped=true;Prompt_Body.TextXAlignment=TXAL;Prompt_Body.TextYAlignment=Enum.TextYAlignment.Top;Prompt_Countdown.Name="Prompt_Countdown"Prompt_Countdown.Parent=Prompt_Main;Prompt_Countdown.BackgroundColor3=RGB(255,255,255)Prompt_Countdown.BackgroundTransparency=1.000;Prompt_Countdown.Position=U2(0,5,1,-24)Prompt_Countdown.Size=U2(0,1,0,18)Prompt_Countdown.ZIndex=1000002;Prompt_Countdown.Font=GTHM;Prompt_Countdown.Text="Time Remaining:"Prompt_Countdown.TextColor3=WinTheme.Text_Color;Prompt_Countdown.TextSize=WinTheme.Text_Size_Medium;Prompt_Countdown.TextXAlignment=TXAL;Accept_Button.Name="Accept_Button"Accept_Button.Parent=Prompt_Main;Accept_Button.BackgroundColor3=WinTheme.Dark_Borders;Accept_Button.BorderColor3=WinTheme.Light_Borders;Accept_Button.Position=U2(1,-72,1,-24)Accept_Button.Size=U2(0,30,0,18)Accept_Button.ZIndex=1000002;Accept_Button.AutoButtonColor=false;Accept_Button.Font=GTHM;Accept_Button.Text="Yes"Accept_Button.TextColor3=WinTheme.Text_Color;Accept_Button.TextSize=WinTheme.Text_Size_Medium;Accept_Button.TextWrapped=true;Prompt_Border.Name="Prompt_Border"Prompt_Border.Parent=Prompt_Main;Prompt_Border.BackgroundColor3=WinTheme.Dark_Borders;Prompt_Border.BorderSizePixel=0;Prompt_Border.Position=U2(0,5,1,-30)Prompt_Border.Size=U2(1,-10,0,1)Prompt_Border.ZIndex=1000002;Reject_Button.Name="Reject_Button"Reject_Button.Parent=Prompt_Main;Reject_Button.BackgroundColor3=WinTheme.Dark_Borders;Reject_Button.BorderColor3=WinTheme.Light_Borders;Reject_Button.Position=U2(1,-36,1,-24)Reject_Button.Size=U2(0,30,0,18)Reject_Button.ZIndex=1000002;Reject_Button.AutoButtonColor=false;Reject_Button.Font=GTHM;Reject_Button.Text="No"Reject_Button.TextColor3=WinTheme.Text_Color;Reject_Button.TextSize=WinTheme.Text_Size_Medium;Reject_Button.TextWrapped=true
+        Prompt.Name="Prompt"Prompt.Parent=UI;Prompt_Blur.Name="Prompt_Blur"Prompt_Blur.Parent=Prompt;Prompt_Blur.BackgroundColor3=RGB(100,100,100)Prompt_Blur.BackgroundTransparency=0.8;Prompt_Blur.Size=U2(1,0,1,UI_Inset.Y)Prompt_Blur.Position=U2(0,0,0,-UI_Inset.Y)Prompt_Blur.BorderSizePixel=0;Prompt_Blur.ZIndex=1000000;Prompt_Blur.Visible=false;Prompt_Window.Name="Prompt_Window"Prompt_Window.Parent=Prompt;Prompt_Window.BackgroundColor3=RGB(255,255,255)Prompt_Window.BackgroundTransparency=1.000;Prompt_Window.BorderColor3=RGB(27,42,53)Prompt_Window.Position=U2(0.5,-180,0.5,-80)Prompt_Window.Size=U2(0,360,0,162)Prompt_Window.ZIndex=1000000;Prompt_Window.Visible=false;Prompt_Top_Bar.Name="Prompt_Top_Bar"Prompt_Top_Bar.Parent=Prompt_Window;Prompt_Top_Bar.BackgroundColor3=window.WinTheme.Background;Prompt_Top_Bar.BorderColor3=window.WinTheme.Dark_Borders;Prompt_Top_Bar.BorderSizePixel=2;Prompt_Top_Bar.Size=U2(1,0,0,20)Prompt_Top_Bar.ZIndex=1000001;Prompt_Title.Name="Prompt_Title"Prompt_Title.Parent=Prompt_Top_Bar;Prompt_Title.BackgroundColor3=RGB(255,255,255)Prompt_Title.BackgroundTransparency=1.000;Prompt_Title.Position=U2(0,5,0,0)Prompt_Title.Size=U2(0,1,1,0)Prompt_Title.ZIndex=1000002;Prompt_Title.Font=GTHM;Prompt_Title.Text="Prompt"Prompt_Title.TextColor3=window.WinTheme.Text_Color;Prompt_Title.TextSize=window.WinTheme.Text_Size_Medium;Prompt_Title.TextXAlignment=TXAL;Prompt_Main.Name="Prompt_Main"Prompt_Main.Parent=Prompt_Window;Prompt_Main.BackgroundColor3=window.WinTheme.Background;Prompt_Main.BorderColor3=window.WinTheme.Dark_Borders;Prompt_Main.BorderSizePixel=2;Prompt_Main.Position=U2(0,0,0,22)Prompt_Main.Size=U2(1,0,1,-22)Prompt_Main.ZIndex=1000001;Prompt_Body.Name="Prompt_Body"Prompt_Body.Parent=Prompt_Main;Prompt_Body.BackgroundColor3=window.WinTheme.Background;Prompt_Body.BorderSizePixel=0;Prompt_Body.Position=U2(0,5,0,10)Prompt_Body.Size=U2(1,-10,1,-44)Prompt_Body.ZIndex=1000002;Prompt_Body.Font=GTHM;Prompt_Body.RichText=true;Prompt_Body.Text=""Prompt_Body.TextColor3=window.WinTheme.Text_Color;Prompt_Body.TextSize=window.WinTheme.Text_Size_Medium;Prompt_Body.TextWrapped=true;Prompt_Body.TextXAlignment=TXAL;Prompt_Body.TextYAlignment=Enum.TextYAlignment.Top;Prompt_Countdown.Name="Prompt_Countdown"Prompt_Countdown.Parent=Prompt_Main;Prompt_Countdown.BackgroundColor3=RGB(255,255,255)Prompt_Countdown.BackgroundTransparency=1.000;Prompt_Countdown.Position=U2(0,5,1,-24)Prompt_Countdown.Size=U2(0,1,0,18)Prompt_Countdown.ZIndex=1000002;Prompt_Countdown.Font=GTHM;Prompt_Countdown.Text="Time Remaining:"Prompt_Countdown.TextColor3=window.WinTheme.Text_Color;Prompt_Countdown.TextSize=window.WinTheme.Text_Size_Medium;Prompt_Countdown.TextXAlignment=TXAL;Accept_Button.Name="Accept_Button"Accept_Button.Parent=Prompt_Main;Accept_Button.BackgroundColor3=window.WinTheme.Dark_Borders;Accept_Button.BorderColor3=window.WinTheme.Light_Borders;Accept_Button.Position=U2(1,-72,1,-24)Accept_Button.Size=U2(0,30,0,18)Accept_Button.ZIndex=1000002;Accept_Button.AutoButtonColor=false;Accept_Button.Font=GTHM;Accept_Button.Text="Yes"Accept_Button.TextColor3=window.WinTheme.Text_Color;Accept_Button.TextSize=window.WinTheme.Text_Size_Medium;Accept_Button.TextWrapped=true;Prompt_Border.Name="Prompt_Border"Prompt_Border.Parent=Prompt_Main;Prompt_Border.BackgroundColor3=window.WinTheme.Dark_Borders;Prompt_Border.BorderSizePixel=0;Prompt_Border.Position=U2(0,5,1,-30)Prompt_Border.Size=U2(1,-10,0,1)Prompt_Border.ZIndex=1000002;Reject_Button.Name="Reject_Button"Reject_Button.Parent=Prompt_Main;Reject_Button.BackgroundColor3=window.WinTheme.Dark_Borders;Reject_Button.BorderColor3=window.WinTheme.Light_Borders;Reject_Button.Position=U2(1,-36,1,-24)Reject_Button.Size=U2(0,30,0,18)Reject_Button.ZIndex=1000002;Reject_Button.AutoButtonColor=false;Reject_Button.Font=GTHM;Reject_Button.Text="No"Reject_Button.TextColor3=window.WinTheme.Text_Color;Reject_Button.TextSize=window.WinTheme.Text_Size_Medium;Reject_Button.TextWrapped=true
+
+        window.NewThemeUpdater({Prompt_Top_Bar, Prompt_Title, Prompt_Main, Prompt_Body, Prompt_Countdown, Accept_Button, Prompt_Border, Reject_Button}, function()
+            Prompt_Top_Bar.BackgroundColor3=window.WinTheme.Background;Prompt_Top_Bar.BorderColor3=window.WinTheme.Dark_Borders;Prompt_Title.TextColor3=window.WinTheme.Text_Color;Prompt_Title.TextSize=window.WinTheme.Text_Size_Medium;Prompt_Main.BackgroundColor3=window.WinTheme.Background;Prompt_Main.BorderColor3=window.WinTheme.Dark_Borders;Prompt_Body.BackgroundColor3=window.WinTheme.Background;Prompt_Body.TextColor3=window.WinTheme.Text_Color;Prompt_Body.TextSize=window.WinTheme.Text_Size_Medium;Prompt_Countdown.TextColor3=window.WinTheme.Text_Color;Prompt_Countdown.TextSize=window.WinTheme.Text_Size_Medium;Accept_Button.BackgroundColor3=window.WinTheme.Dark_Borders;Accept_Button.BorderColor3=window.WinTheme.Light_Borders;Accept_Button.TextColor3=window.WinTheme.Text_Color;Accept_Button.TextSize=window.WinTheme.Text_Size_Medium;Prompt_Border.BackgroundColor3=window.WinTheme.Dark_Borders;Reject_Button.BackgroundColor3=window.WinTheme.Dark_Borders;Reject_Button.BorderColor3=window.WinTheme.Light_Borders;Reject_Button.TextColor3=window.WinTheme.Text_Color;Reject_Button.TextSize=window.WinTheme.Text_Size_Medium
+        end)
 
         local prompt_Accept_Callback = function()end
         local prompt_Reject_Callback = function()end
@@ -629,13 +826,13 @@ Library.NewWindow = function(window_info)
         end)
 
         Accept_Button.MouseEnter:Connect(function()
-            Accept_Button.BorderColor3 = WinTheme.Accent;
-            Accept_Button.TextColor3 = WinTheme.Accent;
+            Accept_Button.BorderColor3 = window.WinTheme.Accent;
+            Accept_Button.TextColor3 = window.WinTheme.Accent;
         end)
 
         Accept_Button.MouseLeave:Connect(function()
-            Accept_Button.BorderColor3 = WinTheme.Light_Borders;
-            Accept_Button.TextColor3 = WinTheme.Text_Color;
+            Accept_Button.BorderColor3 = window.WinTheme.Light_Borders;
+            Accept_Button.TextColor3 = window.WinTheme.Text_Color;
         end)
 
         Reject_Button.MouseButton1Click:Connect(function()
@@ -648,16 +845,16 @@ Library.NewWindow = function(window_info)
         end)
 
         Reject_Button.MouseEnter:Connect(function()
-            Reject_Button.BorderColor3 = WinTheme.Accent;
-            Reject_Button.TextColor3 = WinTheme.Accent;
+            Reject_Button.BorderColor3 = window.WinTheme.Accent;
+            Reject_Button.TextColor3 = window.WinTheme.Accent;
         end)
 
         Reject_Button.MouseLeave:Connect(function()
-            Reject_Button.BorderColor3 = WinTheme.Light_Borders;
-            Reject_Button.TextColor3 = WinTheme.Text_Color;
+            Reject_Button.BorderColor3 = window.WinTheme.Light_Borders;
+            Reject_Button.TextColor3 = window.WinTheme.Text_Color;
         end)
 
-        function root.NewPrompt(prompt_info)
+        function window.NewPrompt(prompt_info)
             prompt_info.Name = prompt_info.Name or "Def Prompt"
             prompt_info.Text = prompt_info.Text or "I am a prompt"
 
@@ -725,7 +922,7 @@ Library.NewWindow = function(window_info)
 
         Notifications_Folder.Name="Notifications"Notifications_Folder.Parent=UI;Container.Name="Container"Container.Parent=Notifications_Folder;Container.BackgroundColor3=RGB(255,255,255)Container.BackgroundTransparency=1.000;Container.BorderSizePixel=0;Container.Position=U2(1,-210,0,-10)Container.Size=U2(0,200,1,0)Container.ZIndex=10000;NotificationLayout.Name="NotificationLayout"NotificationLayout.Parent=Container;NotificationLayout.SortOrder=Enum.SortOrder.LayoutOrder;NotificationLayout.VerticalAlignment=Enum.VerticalAlignment.Bottom;NotificationLayout.Padding=UDim.new(0,5)
 
-        function root.NewNotification(notification_info)
+        function window.NewNotification(notification_info)
             notification_info.Title = notification_info.Title or "Notification"
             notification_info.Body = notification_info.Body or "This is a notification !"
             notification_info.Time = notification_info.Time or 2 -- Seconds
@@ -736,7 +933,11 @@ Library.NewWindow = function(window_info)
             local Body = NEW("TextLabel")
             local Progress = NEW("Frame")
 
-            Notification.Name="Notification"Notification.Parent=Container;Notification.BackgroundColor3=WinTheme.Background;Notification.BorderColor3=WinTheme.Dark_Borders;Notification.ClipsDescendants=true;Notification.Size=U2(1,0,0,0)Notification.ZIndex=10001;Notif_Title.Name="Notif_Title"Notif_Title.Parent=Notification;Notif_Title.BackgroundTransparency=1.000;Notif_Title.Position=U2(0,5,0,0)Notif_Title.Size=U2(1,-5,0,20)Notif_Title.ZIndex=10002;Notif_Title.Font=Enum.Font.GothamSemibold;Notif_Title.Text=notification_info.Title;Notif_Title.TextColor3=WinTheme.Text_Color;Notif_Title.TextSize=12.000;Notif_Title.TextXAlignment=Enum.TextXAlignment.Left;Border.Name="Border"Border.Parent=Notification;Border.BackgroundColor3=WinTheme.Dark_Borders;Border.BorderSizePixel=0;Border.Position=U2(0,0,0,20)Border.Size=U2(1,0,0,1)Border.ZIndex=10002;Body.Name="Body"Body.Parent=Notification;Body.BackgroundColor3=RGB(255,255,255)Body.BackgroundTransparency=1.000;Body.Position=U2(0,5,0,25)Body.Size=U2(1,-10,1,-30)Body.ZIndex=10002;Body.Font=GTHM;Body.Text=notification_info.Body;Body.TextWrapped=true;Body.TextColor3=RGB(255,255,255)Body.TextSize=12.000;Body.TextXAlignment=Enum.TextXAlignment.Left;Body.TextYAlignment=Enum.TextYAlignment.Top;Progress.Name="Progress"Progress.Parent=Notification;Progress.BackgroundColor3=WinTheme.Accent;Progress.BorderSizePixel=0;Progress.Position=U2(0,0,1,-1)Progress.Size=U2(0,0,0,1)Progress.ZIndex=10002
+            Notification.Name="Notification"Notification.Parent=Container;Notification.BackgroundColor3=window.WinTheme.Background;Notification.BorderColor3=window.WinTheme.Dark_Borders;Notification.ClipsDescendants=true;Notification.Size=U2(1,0,0,0)Notification.ZIndex=10001;Notif_Title.Name="Notif_Title"Notif_Title.Parent=Notification;Notif_Title.BackgroundTransparency=1.000;Notif_Title.Position=U2(0,5,0,0)Notif_Title.Size=U2(1,-5,0,20)Notif_Title.ZIndex=10002;Notif_Title.Font=Enum.Font.GothamSemibold;Notif_Title.Text=notification_info.Title;Notif_Title.TextColor3=window.WinTheme.Text_Color;Notif_Title.TextSize=12.000;Notif_Title.TextXAlignment=Enum.TextXAlignment.Left;Border.Name="Border"Border.Parent=Notification;Border.BackgroundColor3=window.WinTheme.Dark_Borders;Border.BorderSizePixel=0;Border.Position=U2(0,0,0,20)Border.Size=U2(1,0,0,1)Border.ZIndex=10002;Body.Name="Body"Body.Parent=Notification;Body.BackgroundColor3=RGB(255,255,255)Body.BackgroundTransparency=1.000;Body.Position=U2(0,5,0,25)Body.Size=U2(1,-10,1,-30)Body.ZIndex=10002;Body.Font=GTHM;Body.Text=notification_info.Body;Body.TextWrapped=true;Body.TextColor3=RGB(255,255,255)Body.TextSize=12.000;Body.TextXAlignment=Enum.TextXAlignment.Left;Body.TextYAlignment=Enum.TextYAlignment.Top;Progress.Name="Progress"Progress.Parent=Notification;Progress.BackgroundColor3=window.WinTheme.Accent;Progress.BorderSizePixel=0;Progress.Position=U2(0,0,1,-1)Progress.Size=U2(0,0,0,1)Progress.ZIndex=10002
+
+            window.NewThemeUpdater({Notification, Notif_Title, Border, Progress}, function()
+                Notification.BackgroundColor3=window.WinTheme.Background;Notification.BorderColor3=window.WinTheme.Dark_Borders;Notif_Title.TextColor3=window.WinTheme.Text_Color;Border.BackgroundColor3=window.WinTheme.Dark_Borders;Progress.BackgroundColor3=window.WinTheme.Accent
+            end)
 
             --
             WRAP(function()
@@ -770,7 +971,7 @@ Library.NewWindow = function(window_info)
         end
     end
 
-    function root.NewPage(page_info)
+    function window.NewPage(page_info)
 
         local Page = NEW("ScrollingFrame")
         local Page_Grid_Layout = NEW("UIGridLayout")
@@ -779,7 +980,11 @@ Library.NewWindow = function(window_info)
         local Page_Option_Right = NEW("Frame")
         local Page_Option_Left = NEW("Frame")
 
-        Page.Name="Page"Page.Parent=Pages;Page.Active=true;Page.BackgroundColor3=RGB(255,255,255)Page.BackgroundTransparency=1.000;Page.BorderColor3=RGB(255,0,4)Page.BorderSizePixel=0;Page.Position=U2(0,5,0,10)Page.Size=U2(1,-10,1,-10)Page.Visible=false;Page.CanvasSize=U2(1,0,20,0)Page.ScrollBarImageColor3=WinTheme.Dark_Accent;Page.ScrollBarThickness=1;Page.ScrollingDirection=Enum.ScrollingDirection.Y;Page_Grid_Layout.Name="Page_Grid_Layout"Page_Grid_Layout.Parent=Page;Page_Grid_Layout.FillDirection=Enum.FillDirection.Horizontal;Page_Grid_Layout.SortOrder=SOLO;Page_Grid_Layout.HorizontalAlignment=Enum.HorizontalAlignment.Left;Page_Grid_Layout.CellPadding=U2(0,6,0,6)Page_Grid_Layout.CellSize=U2(0,0,0,0)Page_Option.Name="Page_Option"Page_Option.Parent=Page_Selector;Page_Option.BackgroundColor3=WinTheme.Accent;Page_Option.BackgroundTransparency=1;Page_Option.BorderSizePixel=0;Page_Option.ZIndex=10001;Page_Option.AutoButtonColor=false;Page_Option.Font=GTHM;Page_Option.Text=page_info.Text or"Page"Page_Option.TextColor3=WinTheme.Text_Color;Page_Option.TextSize=WinTheme.Text_Size_Big;Page_Option.Size=U2(0,Page_Option.TextBounds.X+40,1,0)Page_Option_Right.Name="Page_Option_Right"Page_Option_Right.Parent=Page_Option;Page_Option_Right.BackgroundColor3=WinTheme.Dark_Borders;Page_Option_Right.BorderSizePixel=0;Page_Option_Right.Position=U2(1,-1,0,4)Page_Option_Right.Size=U2(0,2,1,-8)Page_Option_Right.ZIndex=10002;Page_Option_Left.Name="Page_Option_Left"Page_Option_Left.Parent=Page_Option;Page_Option_Left.BackgroundColor3=WinTheme.Dark_Borders;Page_Option_Left.BorderSizePixel=0;Page_Option_Left.Position=U2(0,-1,0,4)Page_Option_Left.Size=U2(0,2,1,-8)Page_Option_Left.ZIndex=10002
+        Page.Name="Page"Page.Parent=Pages;Page.Active=true;Page.BackgroundColor3=RGB(255,255,255)Page.BackgroundTransparency=1.000;Page.BorderColor3=RGB(255,0,4)Page.BorderSizePixel=0;Page.Position=U2(0,5,0,10)Page.Size=U2(1,-10,1,-10)Page.Visible=false;Page.CanvasSize=U2(1,0,20,0)Page.ScrollBarImageColor3=window.WinTheme.Dark_Accent;Page.ScrollBarThickness=1;Page.ScrollingDirection=Enum.ScrollingDirection.Y;Page_Grid_Layout.Name="Page_Grid_Layout"Page_Grid_Layout.Parent=Page;Page_Grid_Layout.FillDirection=Enum.FillDirection.Horizontal;Page_Grid_Layout.SortOrder=SOLO;Page_Grid_Layout.HorizontalAlignment=Enum.HorizontalAlignment.Left;Page_Grid_Layout.CellPadding=U2(0,6,0,6)Page_Grid_Layout.CellSize=U2(0,0,0,0)Page_Option.Name="Page_Option"Page_Option.Parent=Page_Selector;Page_Option.BackgroundColor3=window.WinTheme.Accent;Page_Option.BackgroundTransparency=1;Page_Option.BorderSizePixel=0;Page_Option.ZIndex=10001;Page_Option.AutoButtonColor=false;Page_Option.Font=GTHM;Page_Option.Text=page_info.Text or"Page"Page_Option.TextColor3=window.WinTheme.Text_Color;Page_Option.TextSize=window.WinTheme.Text_Size_Big;Page_Option.Size=U2(0,Page_Option.TextBounds.X+40,1,0)Page_Option_Right.Name="Page_Option_Right"Page_Option_Right.Parent=Page_Option;Page_Option_Right.BackgroundColor3=window.WinTheme.Dark_Borders;Page_Option_Right.BorderSizePixel=0;Page_Option_Right.Position=U2(1,-1,0,4)Page_Option_Right.Size=U2(0,2,1,-8)Page_Option_Right.ZIndex=10002;Page_Option_Left.Name="Page_Option_Left"Page_Option_Left.Parent=Page_Option;Page_Option_Left.BackgroundColor3=window.WinTheme.Dark_Borders;Page_Option_Left.BorderSizePixel=0;Page_Option_Left.Position=U2(0,-1,0,4)Page_Option_Left.Size=U2(0,2,1,-8)Page_Option_Left.ZIndex=10002
+
+        window.NewThemeUpdater({Page, Page_Option, Page_Option_Right, Page_Option_Left}, function()
+            Page.ScrollBarImageColor3=window.WinTheme.Dark_Accent;Page_Option.BackgroundColor3=window.WinTheme.Accent;Page_Option.TextColor3=window.WinTheme.Text_Color;Page_Option.TextSize=window.WinTheme.Text_Size_Big;Page_Option_Right.BackgroundColor3=window.WinTheme.Dark_Borders;Page_Option_Left.BackgroundColor3=window.WinTheme.Dark_Borders
+        end)
 
         do
             Page_Option.MouseButton1Click:Connect(function()
@@ -801,21 +1006,21 @@ Library.NewWindow = function(window_info)
             Page_Option.MouseEnter:Connect(function()
                 Page_Option_Right.ZIndex = 10003
                 Page_Option_Left.ZIndex = 10003
-                Page_Option_Left.BackgroundColor3 = WinTheme.Accent;
-                Page_Option_Right.BackgroundColor3 = WinTheme.Accent;
-                Page_Option.TextColor3 = WinTheme.Accent;
+                Page_Option_Left.BackgroundColor3 = window.WinTheme.Accent;
+                Page_Option_Right.BackgroundColor3 = window.WinTheme.Accent;
+                Page_Option.TextColor3 = window.WinTheme.Accent;
     
-                root.InfoMessage(page_info.Description or "")
+                window.InfoMessage(page_info.Description or "")
             end)
         
             Page_Option.MouseLeave:Connect(function()
-                root.ResetMessage()
+                window.ResetMessage()
     
                 Page_Option_Right.ZIndex = 10002
                 Page_Option_Left.ZIndex = 10002
-                Page_Option_Left.BackgroundColor3 = WinTheme.Dark_Borders
-                Page_Option_Right.BackgroundColor3 = WinTheme.Dark_Borders
-                Page_Option.TextColor3 = WinTheme.Text_Color;
+                Page_Option_Left.BackgroundColor3 = window.WinTheme.Dark_Borders
+                Page_Option_Right.BackgroundColor3 = window.WinTheme.Dark_Borders
+                Page_Option.TextColor3 = window.WinTheme.Text_Color;
             end)
         end
 
@@ -830,7 +1035,11 @@ Library.NewWindow = function(window_info)
             local Section_Item_List = NEW("UIListLayout")
 
             --Properties:
-            Section.Name="Section"Section.Parent=Page;Section.BackgroundColor3=WinTheme.Section_Background;Section.BackgroundTransparency=0;Section.BorderSizePixel=0;Section.BorderMode=Enum.BorderMode.Inset;Section.BorderColor3=WinTheme.Dark_Borders;Section.BorderSizePixel=1;Section.Size=U2(0,100,0,100)Section_Size.Name="Section_Size"Section_Size.Parent=Section;Section_Size.MinSize=V2(131,90)Section_Title.Name="Section_Title"Section_Title.Parent=Section;Section_Title.BackgroundColor3=RGB(255,255,255)Section_Title.BackgroundTransparency=1.000;Section_Title.Size=U2(1,0,0,24)Section_Title.Font=GTHM;Section_Title.Text=section_info.Text or"Section"Section_Title.TextColor3=WinTheme.Text_Color;Section_Title.TextSize=WinTheme.Text_Size_Medium;Item_Container.Name="Item_Container"Item_Container.Parent=Section;Item_Container.BackgroundColor3=RGB(255,255,255)Item_Container.BackgroundTransparency=1.000;Item_Container.Position=U2(0,0,0,24)Item_Container.Size=U2(1,0,1,-24)Section_Item_List.Name="Section_Item_List"Section_Item_List.Parent=Item_Container;Section_Item_List.SortOrder=SOLO;Section_Item_List.Padding=U1(0,8)
+            Section.Name="Section"Section.Parent=Page;Section.BackgroundColor3=window.WinTheme.Section_Background;Section.BackgroundTransparency=0;Section.BorderSizePixel=0;Section.BorderMode=Enum.BorderMode.Inset;Section.BorderColor3=window.WinTheme.Dark_Borders;Section.BorderSizePixel=1;Section.Size=U2(0,100,0,100)Section_Size.Name="Section_Size"Section_Size.Parent=Section;Section_Size.MinSize=V2(131,90)Section_Title.Name="Section_Title"Section_Title.Parent=Section;Section_Title.BackgroundColor3=RGB(255,255,255)Section_Title.BackgroundTransparency=1.000;Section_Title.Size=U2(1,0,0,24)Section_Title.Font=GTHM;Section_Title.Text=section_info.Text or"Section"Section_Title.TextColor3=window.WinTheme.Text_Color;Section_Title.TextSize=window.WinTheme.Text_Size_Medium;Item_Container.Name="Item_Container"Item_Container.Parent=Section;Item_Container.BackgroundColor3=RGB(255,255,255)Item_Container.BackgroundTransparency=1.000;Item_Container.Position=U2(0,0,0,24)Item_Container.Size=U2(1,0,1,-24)Section_Item_List.Name="Section_Item_List"Section_Item_List.Parent=Item_Container;Section_Item_List.SortOrder=SOLO;Section_Item_List.Padding=U1(0,8)
+
+            window.NewThemeUpdater({Section, Section_Title}, function()
+                Section.BackgroundColor3=window.WinTheme.Section_Background;Section.BorderColor3=window.WinTheme.Dark_Borders;Section_Title.TextColor3=window.WinTheme.Text_Color;Section_Title.TextSize=window.WinTheme.Text_Size_Medium
+            end)
 
             local function updateSectionSize()
                 local offsety = 0
@@ -858,24 +1067,28 @@ Library.NewWindow = function(window_info)
                 local Button = NEW("Frame")
                 local Button_Detector = NEW("TextButton")
 
-                Button.Name="Button"Button.Parent=Item_Container;Button.BackgroundColor3=RGB(255,255,255)Button.BackgroundTransparency=1.000;Button.BorderSizePixel=0;Button.Size=U2(1,-10,0,16)Button_Detector.Name="Button_Detector"Button_Detector.Parent=Button;Button_Detector.BackgroundColor3=RGB(0,0,0)Button_Detector.AutoButtonColor=false;Button_Detector.BorderColor3=WinTheme.Light_Borders;Button_Detector.Position=U2(0,5,0,0)Button_Detector.Size=U2(1,0,1,0)Button_Detector.Font=GTHM;Button_Detector.TextColor3=WinTheme.Text_Color;Button_Detector.Text=info.Text or"Button"Button_Detector.TextSize=WinTheme.Text_Size_Medium;Button_Detector.TextWrapped=true
+                Button.Name="Button"Button.Parent=Item_Container;Button.BackgroundColor3=RGB(255,255,255)Button.BackgroundTransparency=1.000;Button.BorderSizePixel=0;Button.Size=U2(1,-10,0,16)Button_Detector.Name="Button_Detector"Button_Detector.Parent=Button;Button_Detector.BackgroundColor3=RGB(0,0,0)Button_Detector.AutoButtonColor=false;Button_Detector.BorderColor3=window.WinTheme.Light_Borders;Button_Detector.Position=U2(0,5,0,0)Button_Detector.Size=U2(1,0,1,0)Button_Detector.Font=GTHM;Button_Detector.TextColor3=window.WinTheme.Text_Color;Button_Detector.Text=info.Text or"Button"Button_Detector.TextSize=window.WinTheme.Text_Size_Medium;Button_Detector.TextWrapped=true
+
+                window.NewThemeUpdater({Button_Detector}, function()
+                    Button_Detector.BorderColor3=window.WinTheme.Light_Borders;Button_Detector.TextColor3=window.WinTheme.Text_Color;Button_Detector.TextSize=window.WinTheme.Text_Size_Medium
+                end)
 
                 Button_Detector.MouseButton1Click:Connect(function()
                     info.Callback()
                 end)
 
                 Button_Detector.MouseEnter:Connect(function()
-                    Button_Detector.BorderColor3 = WinTheme.Accent;
-                    Button_Detector.TextColor3 = WinTheme.Accent;
+                    Button_Detector.BorderColor3 = window.WinTheme.Accent;
+                    Button_Detector.TextColor3 = window.WinTheme.Accent;
         
-                    root.InfoMessage(info.Description or "")
+                    window.InfoMessage(info.Description or "")
                 end)
             
                 Button_Detector.MouseLeave:Connect(function()
-                    root.ResetMessage()
+                    window.ResetMessage()
         
-                    Button_Detector.BorderColor3 = WinTheme.Light_Borders;
-                    Button_Detector.TextColor3 = WinTheme.Text_Color;
+                    Button_Detector.BorderColor3 = window.WinTheme.Light_Borders;
+                    Button_Detector.TextColor3 = window.WinTheme.Text_Color;
                 end)
 
                 updateSectionSize()
@@ -914,7 +1127,11 @@ Library.NewWindow = function(window_info)
                 local Toggle_Left = NEW("Frame")
                 local Toggle_Title = NEW("TextLabel")
 
-                Toggle.Name="Toggle"Toggle.Parent=Item_Container;Toggle.BackgroundColor3=RGB(255,255,255)Toggle.BackgroundTransparency=1.000;Toggle.BorderSizePixel=0;Toggle.Size=U2(0,120,0,16)Toggle_Detector.Name="Toggle_Detector"Toggle_Detector.Parent=Toggle;Toggle_Detector.BackgroundColor3=RGB(0,0,0)Toggle_Detector.BorderColor3=WinTheme.Light_Borders;Toggle_Detector.Position=U2(0,5,0,0)Toggle_Detector.Size=U2(0,16,0,16)Toggle_Detector.AutoButtonColor=false;Toggle_Detector.Image="rbxassetid://7248316188"Toggle_Detector.ImageColor3=WinTheme.Accent;Toggle_Right.Name="Toggle_Right"Toggle_Right.Parent=Toggle_Detector;Toggle_Right.BackgroundColor3=RGB(0,0,0)Toggle_Right.BorderSizePixel=0;Toggle_Right.Position=U2(1,-2,0,0)Toggle_Right.Size=U2(0,2,1,0)Toggle_Left.Name="Toggle_Left"Toggle_Left.Parent=Toggle_Detector;Toggle_Left.BackgroundColor3=RGB(0,0,0)Toggle_Left.BorderSizePixel=0;Toggle_Left.Size=U2(0,2,1,0)Toggle_Title.Name="Toggle_Title"Toggle_Title.Parent=Toggle;Toggle_Title.BackgroundColor3=RGB(255,255,255)Toggle_Title.BackgroundTransparency=1.000;Toggle_Title.Position=U2(0,31,0,0)Toggle_Title.Size=U2(0,1,1,0)Toggle_Title.Font=GTHM;Toggle_Title.Text=info.Text or"Toggle"Toggle_Title.TextColor3=WinTheme.Text_Color;Toggle_Title.TextSize=WinTheme.Text_Size_Medium;Toggle_Title.TextXAlignment=TXAL
+                Toggle.Name="Toggle"Toggle.Parent=Item_Container;Toggle.BackgroundColor3=RGB(255,255,255)Toggle.BackgroundTransparency=1.000;Toggle.BorderSizePixel=0;Toggle.Size=U2(0,120,0,16)Toggle_Detector.Name="Toggle_Detector"Toggle_Detector.Parent=Toggle;Toggle_Detector.BackgroundColor3=RGB(0,0,0)Toggle_Detector.BorderColor3=window.WinTheme.Light_Borders;Toggle_Detector.Position=U2(0,5,0,0)Toggle_Detector.Size=U2(0,16,0,16)Toggle_Detector.AutoButtonColor=false;Toggle_Detector.Image="rbxassetid://7248316188"Toggle_Detector.ImageColor3=window.WinTheme.Accent;Toggle_Right.Name="Toggle_Right"Toggle_Right.Parent=Toggle_Detector;Toggle_Right.BackgroundColor3=RGB(0,0,0)Toggle_Right.BorderSizePixel=0;Toggle_Right.Position=U2(1,-2,0,0)Toggle_Right.Size=U2(0,2,1,0)Toggle_Left.Name="Toggle_Left"Toggle_Left.Parent=Toggle_Detector;Toggle_Left.BackgroundColor3=RGB(0,0,0)Toggle_Left.BorderSizePixel=0;Toggle_Left.Size=U2(0,2,1,0)Toggle_Title.Name="Toggle_Title"Toggle_Title.Parent=Toggle;Toggle_Title.BackgroundColor3=RGB(255,255,255)Toggle_Title.BackgroundTransparency=1.000;Toggle_Title.Position=U2(0,31,0,0)Toggle_Title.Size=U2(0,1,1,0)Toggle_Title.Font=GTHM;Toggle_Title.Text=info.Text or"Toggle"Toggle_Title.TextColor3=window.WinTheme.Text_Color;Toggle_Title.TextSize=window.WinTheme.Text_Size_Medium;Toggle_Title.TextXAlignment=TXAL
+
+                window.NewThemeUpdater({Toggle_Detector, Toggle_Title}, function()
+                    Toggle_Detector.BorderColor3=window.WinTheme.Light_Borders;Toggle_Detector.ImageColor3=window.WinTheme.Accent;Toggle_Title.TextColor3=window.WinTheme.Text_Color;Toggle_Title.TextSize=window.WinTheme.Text_Size_Medium
+                end)
 
                 if isToggled then
                     Toggle_Detector.ImageTransparency = 0
@@ -936,15 +1153,15 @@ Library.NewWindow = function(window_info)
                 end)
 
                 Toggle_Detector.MouseEnter:Connect(function()
-                    Toggle_Detector.BorderColor3 = WinTheme.Accent;
+                    Toggle_Detector.BorderColor3 = window.WinTheme.Accent;
         
-                    root.InfoMessage(info.Description or "")
+                    window.InfoMessage(info.Description or "")
                 end)
             
                 Toggle_Detector.MouseLeave:Connect(function()
-                    root.ResetMessage()
+                    window.ResetMessage()
         
-                    Toggle_Detector.BorderColor3 = WinTheme.Light_Borders;
+                    Toggle_Detector.BorderColor3 = window.WinTheme.Light_Borders;
                 end)
 
                 updateSectionSize()
@@ -968,7 +1185,7 @@ Library.NewWindow = function(window_info)
                     return Toggle_Title.Text
                 end
 
-                function toggle_funcs.GetValue()
+                function toggle_funcs.GetState()
                     return isToggled
                 end
 
@@ -993,22 +1210,26 @@ Library.NewWindow = function(window_info)
                 local TextBox_Title = NEW("TextLabel")
                 local TextBox_Detector = NEW("TextBox")
 
-                TextBox.Name="TextBox"TextBox.Parent=Item_Container;TextBox.BackgroundColor3=RGB(255,255,255)TextBox.BackgroundTransparency=1.000;TextBox.BorderSizePixel=0;TextBox.Size=U2(1,0,0,16)TextBox_Title.Name="TextBox_Title"TextBox_Title.Parent=TextBox;TextBox_Title.BackgroundColor3=RGB(255,255,255)TextBox_Title.BackgroundTransparency=1.000;TextBox_Title.Position=U2(0,5,0,0)TextBox_Title.Size=U2(0,1,1,0)TextBox_Title.Font=GTHM;TextBox_Title.Text=info.Text;TextBox_Title.TextColor3=WinTheme.Text_Color;TextBox_Title.TextSize=WinTheme.Text_Size_Medium;TextBox_Title.TextXAlignment=TXAL;TextBox_Detector.Name="TextBox_Detector"TextBox_Detector.Parent=TextBox;TextBox_Detector.BackgroundColor3=RGB(0,0,0)TextBox_Detector.BorderColor3=WinTheme.Light_Borders;TextBox_Detector.Position=U2(1,-51,0,0)TextBox_Detector.Size=U2(0,46,1,0)TextBox_Detector.Font=GTHM;TextBox_Detector.PlaceholderColor3=RGB(178,178,178)TextBox_Detector.PlaceholderText=info.PlaceHolderText;TextBox_Detector.Text=info.Default;TextBox_Detector.TextColor3=WinTheme.Text_Color;TextBox_Detector.TextSize=WinTheme.Text_Size_Small;TextBox_Detector.ClearTextOnFocus=false;TextBox_Detector.MultiLine=false;TextBox_Detector.ClipsDescendants=true
+                TextBox.Name="TextBox"TextBox.Parent=Item_Container;TextBox.BackgroundColor3=RGB(255,255,255)TextBox.BackgroundTransparency=1.000;TextBox.BorderSizePixel=0;TextBox.Size=U2(1,0,0,16)TextBox_Title.Name="TextBox_Title"TextBox_Title.Parent=TextBox;TextBox_Title.BackgroundColor3=RGB(255,255,255)TextBox_Title.BackgroundTransparency=1.000;TextBox_Title.Position=U2(0,5,0,0)TextBox_Title.Size=U2(0,1,1,0)TextBox_Title.Font=GTHM;TextBox_Title.Text=info.Text;TextBox_Title.TextColor3=window.WinTheme.Text_Color;TextBox_Title.TextSize=window.WinTheme.Text_Size_Medium;TextBox_Title.TextXAlignment=TXAL;TextBox_Detector.Name="TextBox_Detector"TextBox_Detector.Parent=TextBox;TextBox_Detector.BackgroundColor3=RGB(0,0,0)TextBox_Detector.BorderColor3=window.WinTheme.Light_Borders;TextBox_Detector.Position=U2(1,-51,0,0)TextBox_Detector.Size=U2(0,46,1,0)TextBox_Detector.Font=GTHM;TextBox_Detector.PlaceholderColor3=RGB(178,178,178)TextBox_Detector.PlaceholderText=info.PlaceHolderText;TextBox_Detector.Text=info.Default;TextBox_Detector.TextColor3=window.WinTheme.Text_Color;TextBox_Detector.TextSize=window.WinTheme.Text_Size_Small;TextBox_Detector.ClearTextOnFocus=false;TextBox_Detector.MultiLine=false;TextBox_Detector.ClipsDescendants=true
+
+                window.NewThemeUpdater({TextBox_Title, TextBox_Detector}, function()
+                    TextBox_Title.TextColor3=window.WinTheme.Text_Color;TextBox_Title.TextSize=window.WinTheme.Text_Size_Medium;TextBox_Detector.BorderColor3=window.WinTheme.Light_Borders;TextBox_Detector.TextColor3=window.WinTheme.Text_Color;TextBox_Detector.TextSize=window.WinTheme.Text_Size_Small
+                end)
 
                 updateSectionSize()
 
                 TextBox_Detector.MouseEnter:Connect(function()
-                    TextBox_Detector.BorderColor3 = WinTheme.Accent;
-                    TextBox_Detector.TextColor3 = WinTheme.Accent;
+                    TextBox_Detector.BorderColor3 = window.WinTheme.Accent;
+                    TextBox_Detector.TextColor3 = window.WinTheme.Accent;
         
-                    root.InfoMessage(info.Description or "")
+                    window.InfoMessage(info.Description or "")
                 end)
             
                 TextBox_Detector.MouseLeave:Connect(function()
-                    root.ResetMessage()
+                    window.ResetMessage()
         
-                    TextBox_Detector.BorderColor3 = WinTheme.Light_Borders;
-                    TextBox_Detector.TextColor3 = WinTheme.Text_Color;
+                    TextBox_Detector.BorderColor3 = window.WinTheme.Light_Borders;
+                    TextBox_Detector.TextColor3 = window.WinTheme.Text_Color;
                 end)
 
                 TextBox_Detector.FocusLost:Connect(function()
@@ -1084,7 +1305,11 @@ Library.NewWindow = function(window_info)
                 local Value = NEW("TextLabel")
                 local Slider_Title = NEW("TextLabel")
 
-                Slider.Name="Slider"Slider.Parent=Item_Container;Slider.BackgroundColor3=RGB(255,255,255)Slider.BackgroundTransparency=1.000;Slider.BorderSizePixel=0;Slider.Size=U2(1,0,0,33)Slider_Detector.Name="Slider_Detector"Slider_Detector.Parent=Slider;Slider_Detector.BackgroundColor3=RGB(0,0,0)Slider_Detector.BorderColor3=WinTheme.Light_Borders;Slider_Detector.Position=U2(0,5,0,17)Slider_Detector.Size=U2(1,-10,0,16)Slider_Detector.AutoButtonColor=false;Slider_Detector.Font=GTHM;Slider_Detector.Text=""Slider_Detector.TextColor3=WinTheme.Text_Color;Slider_Detector.TextSize=WinTheme.Text_Size_Medium;Slider_Detector.TextWrapped=true;Fill.Name="Fill"Fill.Parent=Slider_Detector;Fill.BackgroundColor3=RGB(65,65,65)Fill.BorderSizePixel=0;Fill.Size=U2(0,100,1,0)Value.Name="Value"Value.Parent=Slider_Detector;Value.BackgroundColor3=RGB(255,255,255)Value.BackgroundTransparency=1.000;Value.Size=U2(1,0,1,0)Value.Font=GTHM;Value.TextColor3=WinTheme.Text_Color;Value.TextSize=WinTheme.Text_Size_Small;Value.TextWrapped=true;Value.Text=current_value..tostring(suffix)Slider_Title.Name="Slider_Title"Slider_Title.Parent=Slider;Slider_Title.BackgroundColor3=RGB(255,255,255)Slider_Title.BackgroundTransparency=1.000;Slider_Title.Position=U2(0,5,0,0)Slider_Title.Size=U2(0,1,0,16)Slider_Title.Font=GTHM;Slider_Title.Text=info.Text or"Slider"Slider_Title.TextColor3=WinTheme.Text_Color;Slider_Title.TextSize=WinTheme.Text_Size_Medium;Slider_Title.TextXAlignment=TXAL
+                Slider.Name="Slider"Slider.Parent=Item_Container;Slider.BackgroundColor3=RGB(255,255,255)Slider.BackgroundTransparency=1.000;Slider.BorderSizePixel=0;Slider.Size=U2(1,0,0,33)Slider_Detector.Name="Slider_Detector"Slider_Detector.Parent=Slider;Slider_Detector.BackgroundColor3=RGB(0,0,0)Slider_Detector.BorderColor3=window.WinTheme.Light_Borders;Slider_Detector.Position=U2(0,5,0,17)Slider_Detector.Size=U2(1,-10,0,16)Slider_Detector.AutoButtonColor=false;Slider_Detector.Font=GTHM;Slider_Detector.Text=""Slider_Detector.TextColor3=window.WinTheme.Text_Color;Slider_Detector.TextSize=window.WinTheme.Text_Size_Medium;Slider_Detector.TextWrapped=true;Fill.Name="Fill"Fill.Parent=Slider_Detector;Fill.BackgroundColor3=RGB(65,65,65)Fill.BorderSizePixel=0;Fill.Size=U2(0,100,1,0)Value.Name="Value"Value.Parent=Slider_Detector;Value.BackgroundColor3=RGB(255,255,255)Value.BackgroundTransparency=1.000;Value.Size=U2(1,0,1,0)Value.Font=GTHM;Value.TextColor3=window.WinTheme.Text_Color;Value.TextSize=window.WinTheme.Text_Size_Small;Value.TextWrapped=true;Value.Text=current_value..tostring(suffix)Slider_Title.Name="Slider_Title"Slider_Title.Parent=Slider;Slider_Title.BackgroundColor3=RGB(255,255,255)Slider_Title.BackgroundTransparency=1.000;Slider_Title.Position=U2(0,5,0,0)Slider_Title.Size=U2(0,1,0,16)Slider_Title.Font=GTHM;Slider_Title.Text=info.Text or"Slider"Slider_Title.TextColor3=window.WinTheme.Text_Color;Slider_Title.TextSize=window.WinTheme.Text_Size_Medium;Slider_Title.TextXAlignment=TXAL
+
+                window.NewThemeUpdater({Slider_Detector, Value, Slider_Title}, function()
+                    Slider_Detector.BorderColor3=window.WinTheme.Light_Borders;Slider_Detector.TextColor3=window.WinTheme.Text_Color;Slider_Detector.TextSize=window.WinTheme.Text_Size_Medium;Value.TextColor3=window.WinTheme.Text_Color;Value.TextSize=window.WinTheme.Text_Size_Small;Slider_Title.TextColor3=window.WinTheme.Text_Color;Slider_Title.TextSize=window.WinTheme.Text_Size_Medium
+                end)
 
                 local Dragging = false
                 local slider_connection
@@ -1092,20 +1317,20 @@ Library.NewWindow = function(window_info)
 
                 Slider_Detector.MouseEnter:Connect(function()
                     if not Dragging then
-                        Slider_Detector.BorderColor3 = WinTheme.Accent;
-                        Value.TextColor3 = WinTheme.Accent;
+                        Slider_Detector.BorderColor3 = window.WinTheme.Accent;
+                        Value.TextColor3 = window.WinTheme.Accent;
                     end
         
-                    root.InfoMessage(info.Description or "")
+                    window.InfoMessage(info.Description or "")
                 end)
 
                 Slider_Detector.MouseLeave:Connect(function()
                     if not Dragging then
-                        Slider_Detector.BorderColor3 = WinTheme.Light_Borders;
-                        Value.TextColor3 = WinTheme.Text_Color;
+                        Slider_Detector.BorderColor3 = window.WinTheme.Light_Borders;
+                        Value.TextColor3 = window.WinTheme.Text_Color;
                     end
 
-                    root.ResetMessage()
+                    window.ResetMessage()
                 end)
 
                 Slider_Detector.MouseButton1Down:Connect(function()
@@ -1118,11 +1343,11 @@ Library.NewWindow = function(window_info)
                         c_up:Disconnect()
                     elseif input.UserInputType == MB1 then
                         if MouseIn(Slider_Detector) then
-                            Slider_Detector.BorderColor3 = WinTheme.Accent;
-                            Value.TextColor3 = WinTheme.Accent;
+                            Slider_Detector.BorderColor3 = window.WinTheme.Accent;
+                            Value.TextColor3 = window.WinTheme.Accent;
                         else
-                            Slider_Detector.BorderColor3 = WinTheme.Light_Borders;
-                            Value.TextColor3 = WinTheme.Text_Color;
+                            Slider_Detector.BorderColor3 = window.WinTheme.Light_Borders;
+                            Value.TextColor3 = window.WinTheme.Text_Color;
                         end
                         Dragging = false
                         RS:UnbindFromRenderStep(RS_ID)
@@ -1222,7 +1447,11 @@ Library.NewWindow = function(window_info)
                 local Options_List = NEW("UIListLayout")
                 local Dropdown_Title = NEW("TextLabel")
 
-                Dropdown.Name="Dropdown"Dropdown.Parent=Item_Container;Dropdown.BackgroundColor3=RGB(255,255,255)Dropdown.BackgroundTransparency=1.000;Dropdown.BorderSizePixel=0;Dropdown.Size=U2(1,0,0,33)Dropdown_Detector.Name="Dropdown_Detector"Dropdown_Detector.Parent=Dropdown;Dropdown_Detector.BackgroundColor3=RGB(0,0,0)Dropdown_Detector.BorderColor3=WinTheme.Light_Borders;Dropdown_Detector.Position=U2(0,5,0,17)Dropdown_Detector.Size=U2(1,-10,0,16)Dropdown_Detector.AutoButtonColor=false;Dropdown_Detector.Font=GTHM;Dropdown_Detector.Text=""Dropdown_Detector.TextColor3=WinTheme.Text_Color;Dropdown_Detector.TextSize=WinTheme.Text_Size_Medium;Dropdown_Detector.TextWrapped=true;Fill.Name="Fill"Fill.Parent=Dropdown_Detector;Fill.BackgroundColor3=RGB(242,239,255)Fill.BorderSizePixel=0;Fill.Position=U2(1,-6,0,0)Fill.Size=U2(0,6,1,0)Current_Option.Name="Current_Option"Current_Option.Parent=Dropdown_Detector;Current_Option.BackgroundColor3=RGB(255,255,255)Current_Option.BackgroundTransparency=1.000;Current_Option.Position=U2(0,5,0,0)Current_Option.Size=U2(0,1,1,0)Current_Option.Font=GTHM;Current_Option.Text=info.Options[info.Default]or"None"Current_Option.TextColor3=WinTheme.Text_Color;Current_Option.TextSize=WinTheme.Text_Size_Small;Current_Option.TextXAlignment=TXAL;Options_Container.Name="Options_Container"Options_Container.Parent=Dropdown_Detector;Options_Container.BackgroundColor3=RGB(255,255,255)Options_Container.BackgroundTransparency=1.000;Options_Container.Position=U2(0,0,1,8)Options_Container.Visible=false;Options_Container.Size=U2(1,-6,1,0)Options_List.Parent=Options_Container;Options_List.SortOrder=SOLO;Options_List.Padding=U1(0,1)Dropdown_Title.Name="Dropdown_Title"Dropdown_Title.Parent=Dropdown;Dropdown_Title.BackgroundColor3=RGB(255,255,255)Dropdown_Title.BackgroundTransparency=1.000;Dropdown_Title.Position=U2(0,5,0,0)Dropdown_Title.Size=U2(0,1,0,16)Dropdown_Title.Font=GTHM;Dropdown_Title.Text=info.Text or"Dropdown"Dropdown_Title.TextColor3=WinTheme.Text_Color;Dropdown_Title.TextSize=WinTheme.Text_Size_Medium;Dropdown_Title.TextXAlignment=TXAL
+                Dropdown.Name="Dropdown"Dropdown.Parent=Item_Container;Dropdown.BackgroundColor3=RGB(255,255,255)Dropdown.BackgroundTransparency=1.000;Dropdown.BorderSizePixel=0;Dropdown.Size=U2(1,0,0,33)Dropdown_Detector.Name="Dropdown_Detector"Dropdown_Detector.Parent=Dropdown;Dropdown_Detector.BackgroundColor3=RGB(0,0,0)Dropdown_Detector.BorderColor3=window.WinTheme.Light_Borders;Dropdown_Detector.Position=U2(0,5,0,17)Dropdown_Detector.Size=U2(1,-10,0,16)Dropdown_Detector.AutoButtonColor=false;Dropdown_Detector.Font=GTHM;Dropdown_Detector.Text=""Dropdown_Detector.TextColor3=window.WinTheme.Text_Color;Dropdown_Detector.TextSize=window.WinTheme.Text_Size_Medium;Dropdown_Detector.TextWrapped=true;Fill.Name="Fill"Fill.Parent=Dropdown_Detector;Fill.BackgroundColor3=RGB(242,239,255)Fill.BorderSizePixel=0;Fill.Position=U2(1,-6,0,0)Fill.Size=U2(0,6,1,0)Current_Option.Name="Current_Option"Current_Option.Parent=Dropdown_Detector;Current_Option.BackgroundColor3=RGB(255,255,255)Current_Option.BackgroundTransparency=1.000;Current_Option.Position=U2(0,5,0,0)Current_Option.Size=U2(0,1,1,0)Current_Option.Font=GTHM;Current_Option.Text=info.Options[info.Default]or"None"Current_Option.TextColor3=window.WinTheme.Text_Color;Current_Option.TextSize=window.WinTheme.Text_Size_Small;Current_Option.TextXAlignment=TXAL;Options_Container.Name="Options_Container"Options_Container.Parent=Dropdown_Detector;Options_Container.BackgroundColor3=RGB(255,255,255)Options_Container.BackgroundTransparency=1.000;Options_Container.Position=U2(0,0,1,8)Options_Container.Visible=false;Options_Container.Size=U2(1,-6,1,0)Options_List.Parent=Options_Container;Options_List.SortOrder=SOLO;Options_List.Padding=U1(0,1)Dropdown_Title.Name="Dropdown_Title"Dropdown_Title.Parent=Dropdown;Dropdown_Title.BackgroundColor3=RGB(255,255,255)Dropdown_Title.BackgroundTransparency=1.000;Dropdown_Title.Position=U2(0,5,0,0)Dropdown_Title.Size=U2(0,1,0,16)Dropdown_Title.Font=GTHM;Dropdown_Title.Text=info.Text or"Dropdown"Dropdown_Title.TextColor3=window.WinTheme.Text_Color;Dropdown_Title.TextSize=window.WinTheme.Text_Size_Medium;Dropdown_Title.TextXAlignment=TXAL
+
+                window.NewThemeUpdater({Dropdown_Detector, Current_Option, Dropdown_Title}, function()
+                    Dropdown_Detector.BorderColor3=window.WinTheme.Light_Borders;Dropdown_Detector.TextColor3=window.WinTheme.Text_Color;Dropdown_Detector.TextSize=window.WinTheme.Text_Size_Medium;Current_Option.TextColor3=window.WinTheme.Text_Color;Current_Option.TextSize=window.WinTheme.Text_Size_Small;Dropdown_Title.TextColor3=window.WinTheme.Text_Color;Dropdown_Title.TextSize=window.WinTheme.Text_Size_Medium
+                end)
 
                 local previous_option
                 Dropdown_Detector.MouseButton1Click:Connect(function()
@@ -1237,24 +1466,28 @@ Library.NewWindow = function(window_info)
                 end)
 
                 Dropdown_Detector.MouseEnter:Connect(function()
-                    Dropdown_Detector.BorderColor3 = WinTheme.Accent;
-                    Current_Option.TextColor3 = WinTheme.Accent;
+                    Dropdown_Detector.BorderColor3 = window.WinTheme.Accent;
+                    Current_Option.TextColor3 = window.WinTheme.Accent;
         
-                    root.InfoMessage(info.Description or "")
+                    window.InfoMessage(info.Description or "")
                 end)
             
                 Dropdown_Detector.MouseLeave:Connect(function()
-                    root.ResetMessage()
+                    window.ResetMessage()
         
-                    Dropdown_Detector.BorderColor3 = WinTheme.Light_Borders;
-                    Current_Option.TextColor3 = WinTheme.Text_Color;
+                    Dropdown_Detector.BorderColor3 = window.WinTheme.Light_Borders;
+                    Current_Option.TextColor3 = window.WinTheme.Text_Color;
                 end)
 
                 local function addOption(v)
                     local Option = NEW("TextButton")
                     local Option_Title = NEW("TextLabel")
 
-                    Option.Name="Option"Option.Parent=Options_Container;Option.BackgroundColor3=RGB(0,0,0)Option.BorderColor3=RGB(10,10,10)Option.Size=U2(1,0,0,16)Option.ZIndex=10;Option.AutoButtonColor=false;Option.Font=GTHM;Option.Text=""Option.TextColor3=RGB(0,0,0)Option.TextSize=WinTheme.Text_Size_Medium;Option_Title.Name="Option_Title"Option_Title.Parent=Option;Option_Title.BackgroundColor3=RGB(255,255,255)Option_Title.BackgroundTransparency=1.000;Option_Title.Position=U2(0,5,0,0)Option_Title.Size=U2(0,1,1,0)Option_Title.ZIndex=11;Option_Title.Font=GTHM;Option_Title.Text=v or"Option"Option_Title.TextColor3=WinTheme.Text_Color;Option_Title.TextSize=WinTheme.Text_Size_Small;Option_Title.TextXAlignment=TXAL
+                    Option.Name="Option"Option.Parent=Options_Container;Option.BackgroundColor3=RGB(0,0,0)Option.BorderColor3=RGB(10,10,10)Option.Size=U2(1,0,0,16)Option.ZIndex=10;Option.AutoButtonColor=false;Option.Font=GTHM;Option.Text=""Option.TextColor3=RGB(0,0,0)Option.TextSize=window.WinTheme.Text_Size_Medium;Option_Title.Name="Option_Title"Option_Title.Parent=Option;Option_Title.BackgroundColor3=RGB(255,255,255)Option_Title.BackgroundTransparency=1.000;Option_Title.Position=U2(0,5,0,0)Option_Title.Size=U2(0,1,1,0)Option_Title.ZIndex=11;Option_Title.Font=GTHM;Option_Title.Text=v or"Option"Option_Title.TextColor3=window.WinTheme.Text_Color;Option_Title.TextSize=window.WinTheme.Text_Size_Small;Option_Title.TextXAlignment=TXAL
+
+                    window.NewThemeUpdater({Option, Option_Title}, function()
+                        Option.TextSize=window.WinTheme.Text_Size_Medium;Option_Title.TextColor3=window.WinTheme.Text_Color;Option_Title.TextSize=window.WinTheme.Text_Size_Small
+                    end)
 
                     Option.MouseButton1Click:Connect(function()
                         Current_Option.Text = v
@@ -1266,20 +1499,20 @@ Library.NewWindow = function(window_info)
                         Option.ZIndex = 12
                         Option_Title.ZIndex = 13
 
-                        Option.BorderColor3 = WinTheme.Accent;
-                        Option_Title.TextColor3 = WinTheme.Accent;
+                        Option.BorderColor3 = window.WinTheme.Accent;
+                        Option_Title.TextColor3 = window.WinTheme.Accent;
 
-                        root.InfoMessage(info.Description or "")
+                        window.InfoMessage(info.Description or "")
                     end)
                 
                     Option.MouseLeave:Connect(function()
-                        root.ResetMessage()
+                        window.ResetMessage()
 
                         Option.ZIndex = 10
                         Option_Title.ZIndex = 11
 
                         Option.BorderColor3 = RGB(10, 10, 10)
-                        Option_Title.TextColor3 = WinTheme.Text_Color;
+                        Option_Title.TextColor3 = window.WinTheme.Text_Color;
                     end)
                 end
 
@@ -1323,7 +1556,11 @@ Library.NewWindow = function(window_info)
                 local Current_Keybind = NEW("TextLabel")
                 local Keybind_Title = NEW("TextLabel")
 
-                Keybind.Name="Keybind"Keybind.Parent=Item_Container;Keybind.BackgroundColor3=RGB(255,255,255)Keybind.BackgroundTransparency=1.000;Keybind.BorderSizePixel=0;Keybind.Size=U2(1,0,0,33)Keybind_Detector.Name="Keybind_Detector"Keybind_Detector.Parent=Keybind;Keybind_Detector.BackgroundColor3=RGB(0,0,0)Keybind_Detector.BorderColor3=WinTheme.Light_Borders;Keybind_Detector.Position=U2(0,5,0,17)Keybind_Detector.Size=U2(1,-10,0,16)Keybind_Detector.AutoButtonColor=false;Keybind_Detector.Font=GTHM;Keybind_Detector.Text=""Keybind_Detector.TextColor3=WinTheme.Text_Color;Keybind_Detector.TextSize=WinTheme.Text_Size_Medium;Keybind_Detector.TextWrapped=true;Fill.Name="Fill"Fill.Parent=Keybind_Detector;Fill.BackgroundColor3=RGB(242,239,255)Fill.BorderSizePixel=0;Fill.Position=U2(1,-6,0,0)Fill.Size=U2(0,6,1,0)Current_Keybind.Name="Current_Keybind"Current_Keybind.Parent=Keybind_Detector;Current_Keybind.BackgroundColor3=RGB(255,255,255)Current_Keybind.BackgroundTransparency=1.000;Current_Keybind.Position=U2(0,5,0,0)Current_Keybind.Size=U2(0,1,1,0)Current_Keybind.Font=GTHM;Current_Keybind.TextColor3=WinTheme.Text_Color;Current_Keybind.TextSize=WinTheme.Text_Size_Small;Current_Keybind.TextXAlignment=TXAL
+                Keybind.Name="Keybind"Keybind.Parent=Item_Container;Keybind.BackgroundColor3=RGB(255,255,255)Keybind.BackgroundTransparency=1.000;Keybind.BorderSizePixel=0;Keybind.Size=U2(1,0,0,33)Keybind_Detector.Name="Keybind_Detector"Keybind_Detector.Parent=Keybind;Keybind_Detector.BackgroundColor3=RGB(0,0,0)Keybind_Detector.BorderColor3=window.WinTheme.Light_Borders;Keybind_Detector.Position=U2(0,5,0,17)Keybind_Detector.Size=U2(1,-10,0,16)Keybind_Detector.AutoButtonColor=false;Keybind_Detector.Font=GTHM;Keybind_Detector.Text=""Keybind_Detector.TextColor3=window.WinTheme.Text_Color;Keybind_Detector.TextSize=window.WinTheme.Text_Size_Medium;Keybind_Detector.TextWrapped=true;Fill.Name="Fill"Fill.Parent=Keybind_Detector;Fill.BackgroundColor3=RGB(242,239,255)Fill.BorderSizePixel=0;Fill.Position=U2(1,-6,0,0)Fill.Size=U2(0,6,1,0)Current_Keybind.Name="Current_Keybind"Current_Keybind.Parent=Keybind_Detector;Current_Keybind.BackgroundColor3=RGB(255,255,255)Current_Keybind.BackgroundTransparency=1.000;Current_Keybind.Position=U2(0,5,0,0)Current_Keybind.Size=U2(0,1,1,0)Current_Keybind.Font=GTHM;Current_Keybind.TextColor3=window.WinTheme.Text_Color;Current_Keybind.TextSize=window.WinTheme.Text_Size_Small;Current_Keybind.TextXAlignment=TXAL;Keybind_Title.Name="Keybind_Title"Keybind_Title.Parent=Keybind;Keybind_Title.BackgroundColor3=RGB(255,255,255)Keybind_Title.BackgroundTransparency=1.000;Keybind_Title.Position=U2(0,5,0,0)Keybind_Title.Size=U2(0,1,0,16)Keybind_Title.Font=GTHM;Keybind_Title.Text=info.Text or"Keybind"Keybind_Title.TextColor3=window.WinTheme.Text_Color;Keybind_Title.TextSize=window.WinTheme.Text_Size_Medium;Keybind_Title.TextXAlignment=TXAL
+
+                window.NewThemeUpdater({Keybind_Detector, Current_Keybind, Keybind_Title}, function()
+                    Keybind_Detector.BorderColor3=window.WinTheme.Light_Borders;Keybind_Detector.TextColor3=window.WinTheme.Text_Color;Keybind_Detector.TextSize=window.WinTheme.Text_Size_Medium;Current_Keybind.TextColor3=window.WinTheme.Text_Color;Current_Keybind.TextSize=window.WinTheme.Text_Size_Small;Keybind_Title.TextColor3 = window.WinTheme.Text_Color;Keybind_Title.TextSize = window.WinTheme.Text_Size_Medium;
+                end)
 
                 local Current = info.Default
                 local function setKeybind(new)
@@ -1336,8 +1573,6 @@ Library.NewWindow = function(window_info)
                     info.KeyCallback(Current) 
                 end
                 setKeybind(Current)
-
-                Keybind_Title.Name="Keybind_Title"Keybind_Title.Parent=Keybind;Keybind_Title.BackgroundColor3=RGB(255,255,255)Keybind_Title.BackgroundTransparency=1.000;Keybind_Title.Position=U2(0,5,0,0)Keybind_Title.Size=U2(0,1,0,16)Keybind_Title.Font=GTHM;Keybind_Title.Text=info.Text or"Keybind"Keybind_Title.TextColor3=WinTheme.Text_Color;Keybind_Title.TextSize=WinTheme.Text_Size_Medium;Keybind_Title.TextXAlignment=TXAL
 
                 local Binding = false
                 local function startSelection()
@@ -1390,17 +1625,17 @@ Library.NewWindow = function(window_info)
                 end)
 
                 Keybind_Detector.MouseEnter:Connect(function()
-                    Keybind_Detector.BorderColor3 = WinTheme.Accent;
-                    Current_Keybind.TextColor3 = WinTheme.Accent;
+                    Keybind_Detector.BorderColor3 = window.WinTheme.Accent;
+                    Current_Keybind.TextColor3 = window.WinTheme.Accent;
         
-                    root.InfoMessage(info.Description or "")
+                    window.InfoMessage(info.Description or "")
                 end)
             
                 Keybind_Detector.MouseLeave:Connect(function()
-                    root.ResetMessage()
+                    window.ResetMessage()
         
-                    Keybind_Detector.BorderColor3 = WinTheme.Light_Borders;
-                    Current_Keybind.TextColor3 = WinTheme.Text_Color;
+                    Keybind_Detector.BorderColor3 = window.WinTheme.Light_Borders;
+                    Current_Keybind.TextColor3 = window.WinTheme.Text_Color;
                 end)
 
                 updateSectionSize()
@@ -1442,7 +1677,11 @@ Library.NewWindow = function(window_info)
                 local Colorpicker_Detector = NEW("ImageButton")
                 local Detector_Gradient = NEW("UIGradient")
 
-                Colorpicker.Name="Colorpicker"Colorpicker.Parent=Item_Container;Colorpicker.BackgroundColor3=RGB(255,255,255)Colorpicker.BackgroundTransparency=1.000;Colorpicker.BorderSizePixel=0;Colorpicker.Size=U2(1,0,0,16)Colorpicker_Title.Name="Colorpicker_Title"Colorpicker_Title.Parent=Colorpicker;Colorpicker_Title.BackgroundColor3=RGB(255,255,255)Colorpicker_Title.BackgroundTransparency=1.000;Colorpicker_Title.Position=U2(0,5,0,0)Colorpicker_Title.Size=U2(0,1,1,0)Colorpicker_Title.Font=GTHM;Colorpicker_Title.Text=info.Text or"Color"Colorpicker_Title.TextColor3=WinTheme.Text_Color;Colorpicker_Title.TextSize=WinTheme.Text_Size_Medium;Colorpicker_Title.TextXAlignment=TXAL;Colorpicker_Detector.Name="Colorpicker_Detector"Colorpicker_Detector.Parent=Colorpicker;Colorpicker_Detector.BackgroundColor3=RGB(0,0,0)Colorpicker_Detector.BorderColor3=WinTheme.Light_Borders;Colorpicker_Detector.Position=U2(1,-23,0.5,-6)Colorpicker_Detector.Size=U2(0,18,0,12)Colorpicker_Detector.AutoButtonColor=false;Colorpicker_Detector.ImageTransparency=1.000;Detector_Gradient.Color=COLOR_SEQUENCE{COLOR_KEYPOINT(0.00,RGB(255,255,255)),COLOR_KEYPOINT(0.54,RGB(225,225,225)),COLOR_KEYPOINT(1.00,RGB(125,125,125))}Detector_Gradient.Rotation=90;Detector_Gradient.Name="Detector_Gradient"Detector_Gradient.Parent=Colorpicker_Detector
+                Colorpicker.Name="Colorpicker"Colorpicker.Parent=Item_Container;Colorpicker.BackgroundColor3=RGB(255,255,255)Colorpicker.BackgroundTransparency=1.000;Colorpicker.BorderSizePixel=0;Colorpicker.Size=U2(1,0,0,16)Colorpicker_Title.Name="Colorpicker_Title"Colorpicker_Title.Parent=Colorpicker;Colorpicker_Title.BackgroundColor3=RGB(255,255,255)Colorpicker_Title.BackgroundTransparency=1.000;Colorpicker_Title.Position=U2(0,5,0,0)Colorpicker_Title.Size=U2(0,1,1,0)Colorpicker_Title.Font=GTHM;Colorpicker_Title.Text=info.Text or"Color"Colorpicker_Title.TextColor3=window.WinTheme.Text_Color;Colorpicker_Title.TextSize=window.WinTheme.Text_Size_Medium;Colorpicker_Title.TextXAlignment=TXAL;Colorpicker_Detector.Name="Colorpicker_Detector"Colorpicker_Detector.Parent=Colorpicker;Colorpicker_Detector.BackgroundColor3=RGB(0,0,0)Colorpicker_Detector.BorderColor3=window.WinTheme.Light_Borders;Colorpicker_Detector.Position=U2(1,-23,0.5,-6)Colorpicker_Detector.Size=U2(0,18,0,12)Colorpicker_Detector.AutoButtonColor=false;Colorpicker_Detector.ImageTransparency=1.000;Detector_Gradient.Color=COLOR_SEQUENCE{COLOR_KEYPOINT(0.00,RGB(255,255,255)),COLOR_KEYPOINT(0.54,RGB(225,225,225)),COLOR_KEYPOINT(1.00,RGB(125,125,125))}Detector_Gradient.Rotation=90;Detector_Gradient.Name="Detector_Gradient"Detector_Gradient.Parent=Colorpicker_Detector
+
+                window.NewThemeUpdater({Colorpicker_Title, Colorpicker_Detector}, function()
+                    Colorpicker_Title.TextColor3 = window.WinTheme.Text_Color;Colorpicker_Title.TextSize = window.WinTheme.Text_Size_Medium;Colorpicker_Detector.BorderColor3 = window.WinTheme.Light_Borders;
+                end)
 
                 -- PICKER WINDOW
                 local Picker = NEW("Frame")
@@ -1470,98 +1709,140 @@ Library.NewWindow = function(window_info)
                 local HEX_Value = NEW("TextBox")
                 local HEX_Fill = NEW("Frame")
 
-                Picker.Name="Picker"Picker.Parent=Picker_Windows;Picker.BackgroundColor3=WinTheme.Background;Picker.BorderColor3=WinTheme.Dark_Borders;Picker.Position=U2(0.150000006,0,0.5,0)Picker.Size=U2(0,250,0,16)Picker.ZIndex=100010;Picker.Visible=false;Picker.Active=true;Picker.Draggable=true;Picker_Title.Name="Picker_Title"Picker_Title.Parent=Picker;Picker_Title.BackgroundColor3=RGB(255,255,255)Picker_Title.BackgroundTransparency=1.000;Picker_Title.Position=U2(0,5,0,0)Picker_Title.Size=U2(0,1,1,0)Picker_Title.ZIndex=100011;Picker_Title.Font=GTHM;Picker_Title.Text="Color: "..(Page_Option.Text or"Page").."/"..(info.Text or"Color")Picker_Title.TextColor3=WinTheme.Text_Color;Picker_Title.TextSize=WinTheme.Text_Size_Medium;Picker_Title.TextXAlignment=TXAL;Picker_Close.Name="Picker_Close"Picker_Close.Parent=Picker;Picker_Close.BackgroundTransparency=1;Picker_Close.BackgroundColor3=WinTheme.Background;Picker_Close.BorderColor3=WinTheme.Accent;Picker_Close.BorderSizePixel=1;Picker_Close.Position=U2(1,-16,0,0)Picker_Close.Size=U2(0,16,0,16)Picker_Close.ZIndex=100011;Picker_Close.AutoButtonColor=false;Picker_Close.Image="rbxassetid://7248316188"Picker_Close_Left.Name="Picker_Close_Left"Picker_Close_Left.Parent=Picker_Close;Picker_Close_Left.BackgroundColor3=WinTheme.Background;Picker_Close_Left.BorderSizePixel=0;Picker_Close_Left.Size=U2(0,4,1,0)Picker_Close_Left.ZIndex=100012;Picker_Close_Right.Name="Picker_Close_Right"Picker_Close_Right.Parent=Picker_Close;Picker_Close_Right.BackgroundColor3=WinTheme.Background;Picker_Close_Right.BorderSizePixel=0;Picker_Close_Right.Position=U2(1,-4,0,0)Picker_Close_Right.Size=U2(0,4,1,0)Picker_Close_Right.ZIndex=100012;Picker_Main.Name="Picker_Main"Picker_Main.Parent=Picker;Picker_Main.BackgroundColor3=WinTheme.Background;Picker_Main.BorderColor3=WinTheme.Dark_Borders;Picker_Main.Position=U2(0,0,0,17)Picker_Main.Size=U2(1,0,0,134)Picker_Main.ZIndex=100003;HSVBox.Name="HSVBox"HSVBox.Parent=Picker_Main;HSVBox.BackgroundColor3=RGB(255,0,4)HSVBox.BorderColor3=RGB(0,0,0)HSVBox.Position=U2(0,8,0,8)HSVBox.Size=U2(0,118,1,-16)HSVBox.ZIndex=100003;HSVBox.AutoButtonColor=false;HSVBox.Image="rbxassetid://4155801252"Cursor.Name="Cursor"Cursor.Parent=HSVBox;Cursor.BackgroundColor3=RGB(255,255,255)Cursor.BorderColor3=RGB(0,0,0)Cursor.Size=U2(0,1,0,1)Cursor.ZIndex=100003;HUEPicker.Name="HUEPicker"HUEPicker.Parent=Picker_Main;HUEPicker.BackgroundColor3=RGB(255,255,255)HUEPicker.BorderColor3=RGB(0,0,0)HUEPicker.Position=U2(0,131,0,8)HUEPicker.Size=U2(0,10,1,-16)HUEPicker.ZIndex=100003;HUEPicker.AutoButtonColor=false;Indicator.Name="Indicator"Indicator.Parent=HUEPicker;Indicator.BackgroundColor3=RGB(0,0,0)Indicator.BorderColor3=WinTheme.Light_Borders;Indicator.Size=U2(1,0,0,2)Indicator.ZIndex=100003;HUEGradient.Color=COLOR_SEQUENCE{COLOR_KEYPOINT(0.00,RGB(255,0,4)),COLOR_KEYPOINT(0.10,RGB(255,0,200)),COLOR_KEYPOINT(0.20,RGB(153,0,255)),COLOR_KEYPOINT(0.30,RGB(0,0,255)),COLOR_KEYPOINT(0.40,RGB(0,149,255)),COLOR_KEYPOINT(0.50,RGB(0,255,209)),COLOR_KEYPOINT(0.60,RGB(0,255,55)),COLOR_KEYPOINT(0.70,RGB(98,255,0)),COLOR_KEYPOINT(0.80,RGB(251,255,0)),COLOR_KEYPOINT(0.90,RGB(255,106,0)),COLOR_KEYPOINT(1.00,RGB(255,0,0))}HUEGradient.Rotation=90;HUEGradient.Name="HUEGradient"HUEGradient.Parent=HUEPicker;R_Box.Name="R_Box"R_Box.Parent=Picker_Main;R_Box.BackgroundColor3=RGB(0,0,0)R_Box.BorderColor3=WinTheme.Light_Borders;R_Box.Position=U2(1,-95,0,8)R_Box.Size=U2(0,90,0,16)R_Box.ZIndex=100003;R_Value.Name="R_Value"R_Value.Parent=R_Box;R_Value.BackgroundColor3=RGB(255,255,255)R_Value.BackgroundTransparency=1.000;R_Value.Position=U2(0,5,0,0)R_Value.Size=U2(1,-5,1,0)R_Value.ZIndex=100003;R_Value.ClearTextOnFocus=false;R_Value.Font=GTHM;R_Value.PlaceholderColor3=RGB(178,178,178)R_Value.PlaceholderText="R"R_Value.Text="155"R_Value.TextColor3=WinTheme.Text_Color;R_Value.TextSize=WinTheme.Text_Size_Small;R_Value.TextXAlignment=TXAL;R_Fill.Name="R_Fill"R_Fill.Parent=R_Box;R_Fill.BackgroundColor3=RGB(242,239,255)R_Fill.BorderSizePixel=0;R_Fill.Position=U2(1,-6,0,0)R_Fill.Size=U2(0,6,1,0)R_Fill.ZIndex=100003
+                Picker.Name="Picker"Picker.Parent=Picker_Windows;Picker.BackgroundColor3=window.WinTheme.Background;Picker.BorderColor3=window.WinTheme.Dark_Borders;Picker.Position=U2(0.150000006,0,0.5,0)Picker.Size=U2(0,250,0,16)Picker.ZIndex=lastCPZIndex+10;Picker.Visible=false;Picker.Active=true;Picker.Draggable=true;Picker_Title.Name="Picker_Title"Picker_Title.Parent=Picker;Picker_Title.BackgroundColor3=RGB(255,255,255)Picker_Title.BackgroundTransparency=1.000;Picker_Title.Position=U2(0,5,0,0)Picker_Title.Size=U2(0,1,1,0)Picker_Title.ZIndex=lastCPZIndex+11;Picker_Title.Font=GTHM;Picker_Title.Text="Color: "..(Page_Option.Text or"Page").."/"..(info.Text or"Color")Picker_Title.TextColor3=window.WinTheme.Text_Color;Picker_Title.TextSize=window.WinTheme.Text_Size_Medium;Picker_Title.TextXAlignment=TXAL;Picker_Close.Name="Picker_Close"Picker_Close.Parent=Picker;Picker_Close.BackgroundTransparency=1;Picker_Close.BackgroundColor3=window.WinTheme.Background;Picker_Close.BorderColor3=window.WinTheme.Accent;Picker_Close.BorderSizePixel=1;Picker_Close.Position=U2(1,-16,0,0)Picker_Close.Size=U2(0,16,0,16)Picker_Close.ZIndex=lastCPZIndex+12;Picker_Close.AutoButtonColor=false;Picker_Close.Image="rbxassetid://7248316188"Picker_Close_Left.Name="Picker_Close_Left"Picker_Close_Left.Parent=Picker_Close;Picker_Close_Left.BackgroundColor3=window.WinTheme.Background;Picker_Close_Left.BorderSizePixel=0;Picker_Close_Left.Size=U2(0,4,1,0)Picker_Close_Left.ZIndex=lastCPZIndex+12;Picker_Close_Right.Name="Picker_Close_Right"Picker_Close_Right.Parent=Picker_Close;Picker_Close_Right.BackgroundColor3=window.WinTheme.Background;Picker_Close_Right.BorderSizePixel=0;Picker_Close_Right.Position=U2(1,-4,0,0)Picker_Close_Right.Size=U2(0,4,1,0)Picker_Close_Right.ZIndex=lastCPZIndex+12;Picker_Main.Name="Picker_Main"Picker_Main.Parent=Picker;Picker_Main.BackgroundColor3=window.WinTheme.Background;Picker_Main.BorderColor3=window.WinTheme.Dark_Borders;Picker_Main.Position=U2(0,0,0,17)Picker_Main.Size=U2(1,0,0,134)Picker_Main.ZIndex=lastCPZIndex+11;HSVBox.Name="HSVBox"HSVBox.Parent=Picker_Main;HSVBox.BackgroundColor3=RGB(255,0,4)HSVBox.BorderColor3=RGB(0,0,0)HSVBox.Position=U2(0,8,0,8)HSVBox.Size=U2(0,118,1,-16)HSVBox.ZIndex=lastCPZIndex+12;HSVBox.AutoButtonColor=false;HSVBox.Image="rbxassetid://4155801252"Cursor.Name="Cursor"Cursor.Parent=HSVBox;Cursor.BackgroundColor3=RGB(255,255,255)Cursor.BorderColor3=RGB(0,0,0)Cursor.Size=U2(0,1,0,1)Cursor.ZIndex=lastCPZIndex+12;HUEPicker.Name="HUEPicker"HUEPicker.Parent=Picker_Main;HUEPicker.BackgroundColor3=RGB(255,255,255)HUEPicker.BorderColor3=RGB(0,0,0)HUEPicker.Position=U2(0,131,0,8)HUEPicker.Size=U2(0,10,1,-16)HUEPicker.ZIndex=lastCPZIndex+12;HUEPicker.AutoButtonColor=false;Indicator.Name="Indicator"Indicator.Parent=HUEPicker;Indicator.BackgroundColor3=RGB(0,0,0)Indicator.BorderColor3=window.WinTheme.Light_Borders;Indicator.Size=U2(1,0,0,2)Indicator.ZIndex=lastCPZIndex+12;HUEGradient.Color=COLOR_SEQUENCE{COLOR_KEYPOINT(0.00,RGB(255,0,4)),COLOR_KEYPOINT(0.10,RGB(255,0,200)),COLOR_KEYPOINT(0.20,RGB(153,0,255)),COLOR_KEYPOINT(0.30,RGB(0,0,255)),COLOR_KEYPOINT(0.40,RGB(0,149,255)),COLOR_KEYPOINT(0.50,RGB(0,255,209)),COLOR_KEYPOINT(0.60,RGB(0,255,55)),COLOR_KEYPOINT(0.70,RGB(98,255,0)),COLOR_KEYPOINT(0.80,RGB(251,255,0)),COLOR_KEYPOINT(0.90,RGB(255,106,0)),COLOR_KEYPOINT(1.00,RGB(255,0,0))}HUEGradient.Rotation=90;HUEGradient.Name="HUEGradient"HUEGradient.Parent=HUEPicker                
+                
+                window.NewThemeUpdater({Picker, Picker_Title, Picker_Close, Picker_Close_Left, Picker_Close_Right, Picker_Main, Indicator}, function()
+                    Picker.BackgroundColor3=window.WinTheme.Background;Picker.BorderColor3=window.WinTheme.Dark_Borders;Picker_Title.TextColor3=window.WinTheme.Text_Color;Picker_Title.TextSize=window.WinTheme.Text_Size_Medium;Picker_Close.BackgroundColor3=window.WinTheme.Background;Picker_Close.BorderColor3=window.WinTheme.Accent;Picker_Close_Left.BackgroundColor3=window.WinTheme.Background;Picker_Close_Right.BackgroundColor3=window.WinTheme.Background;Picker_Main.BackgroundColor3=window.WinTheme.Background;Picker_Main.BorderColor3=window.WinTheme.Dark_Borders;Indicator.BorderColor3=window.WinTheme.Light_Borders;
+                end)
+
+                --
+
+                R_Box.Name="R_Box"R_Box.Parent=Picker_Main;R_Box.BackgroundColor3=RGB(0,0,0)R_Box.BorderColor3=window.WinTheme.Light_Borders;R_Box.Position=U2(1,-95,0,8)R_Box.Size=U2(0,90,0,16)R_Box.ZIndex=lastCPZIndex+12;R_Value.Name="R_Value"R_Value.Parent=R_Box;R_Value.BackgroundColor3=RGB(255,255,255)R_Value.BackgroundTransparency=1.000;R_Value.Position=U2(0,5,0,0)R_Value.Size=U2(1,-5,1,0)R_Value.ZIndex=lastCPZIndex+12;R_Value.ClearTextOnFocus=false;R_Value.Font=GTHM;R_Value.PlaceholderColor3=RGB(178,178,178)R_Value.PlaceholderText="R"R_Value.Text="155"R_Value.TextColor3=window.WinTheme.Text_Color;R_Value.TextSize=window.WinTheme.Text_Size_Small;R_Value.TextXAlignment=TXAL;R_Fill.Name="R_Fill"R_Fill.Parent=R_Box;R_Fill.BackgroundColor3=RGB(242,239,255)R_Fill.BorderSizePixel=0;R_Fill.Position=U2(1,-6,0,0)R_Fill.Size=U2(0,6,1,0)R_Fill.ZIndex=lastCPZIndex+12                
+                
+                window.NewThemeUpdater({R_Box, R_Value}, function()
+                    R_Box.BorderColor3=window.WinTheme.Light_Borders;
+                    R_Value.TextColor3=window.WinTheme.Text_Color;
+                    R_Value.TextSize=window.WinTheme.Text_Size_Small;
+                end)
 
                 do -- R_Box VALUE
                     R_Box.MouseEnter:Connect(function()
-                        R_Box.BorderColor3 = WinTheme.Accent;
-                        R_Value.TextColor3 = WinTheme.Accent;
+                        R_Box.BorderColor3 = window.WinTheme.Accent;
+                        R_Value.TextColor3 = window.WinTheme.Accent;
 
-                        root.InfoMessage("Red setting format: 0-255")
+                        window.InfoMessage("Red setting format: 0-255")
                     end)
                 
                     R_Box.MouseLeave:Connect(function()
-                        root.ResetMessage()
+                        window.ResetMessage()
 
-                        R_Box.BorderColor3 = WinTheme.Light_Borders;
-                        R_Value.TextColor3 = WinTheme.Text_Color;
+                        R_Box.BorderColor3 = window.WinTheme.Light_Borders;
+                        R_Value.TextColor3 = window.WinTheme.Text_Color;
                     end)
                 end
 
-                G_Box.Name="G_Box"G_Box.Parent=Picker_Main;G_Box.BackgroundColor3=RGB(0,0,0)G_Box.BorderColor3=WinTheme.Light_Borders;G_Box.Position=U2(1,-95,0,32)G_Box.Size=U2(0,90,0,16)G_Box.ZIndex=100003;G_Value.Name="G_Value"G_Value.Parent=G_Box;G_Value.BackgroundColor3=RGB(255,255,255)G_Value.BackgroundTransparency=1.000;G_Value.Position=U2(0,5,0,0)G_Value.Size=U2(1,-5,1,0)G_Value.ZIndex=100003;G_Value.ClearTextOnFocus=false;G_Value.Font=GTHM;G_Value.PlaceholderText="G"G_Value.Text="155"G_Value.TextColor3=WinTheme.Text_Color;G_Value.TextSize=WinTheme.Text_Size_Small;G_Value.TextXAlignment=TXAL;G_Fill.Name="G_Fill"G_Fill.Parent=G_Box;G_Fill.BackgroundColor3=RGB(242,239,255)G_Fill.BorderSizePixel=0;G_Fill.Position=U2(1,-6,0,0)G_Fill.Size=U2(0,6,1,0)G_Fill.ZIndex=100003
+                G_Box.Name="G_Box"G_Box.Parent=Picker_Main;G_Box.BackgroundColor3=RGB(0,0,0)G_Box.BorderColor3=window.WinTheme.Light_Borders;G_Box.Position=U2(1,-95,0,32)G_Box.Size=U2(0,90,0,16)G_Box.ZIndex=lastCPZIndex+12;G_Value.Name="G_Value"G_Value.Parent=G_Box;G_Value.BackgroundColor3=RGB(255,255,255)G_Value.BackgroundTransparency=1.000;G_Value.Position=U2(0,5,0,0)G_Value.Size=U2(1,-5,1,0)G_Value.ZIndex=lastCPZIndex+12;G_Value.ClearTextOnFocus=false;G_Value.Font=GTHM;G_Value.PlaceholderText="G"G_Value.Text="155"G_Value.TextColor3=window.WinTheme.Text_Color;G_Value.TextSize=window.WinTheme.Text_Size_Small;G_Value.TextXAlignment=TXAL;G_Fill.Name="G_Fill"G_Fill.Parent=G_Box;G_Fill.BackgroundColor3=RGB(242,239,255)G_Fill.BorderSizePixel=0;G_Fill.Position=U2(1,-6,0,0)G_Fill.Size=U2(0,6,1,0)G_Fill.ZIndex=lastCPZIndex+12
+                
+                window.NewThemeUpdater({G_Box, G_Value}, function()
+                    G_Box.BorderColor3 = window.WinTheme.Light_Borders;
+                    G_Value.TextColor3 = window.WinTheme.Text_Color;
+                    G_Value.TextSize = window.WinTheme.Text_Size_Small;
+                end)
 
                 do -- G_Box VALUE
                     G_Box.MouseEnter:Connect(function()
-                        G_Box.BorderColor3 = WinTheme.Accent;
-                        G_Value.TextColor3 = WinTheme.Accent;
+                        G_Box.BorderColor3 = window.WinTheme.Accent;
+                        G_Value.TextColor3 = window.WinTheme.Accent;
 
-                        root.InfoMessage("Green setting format: 0-255")
+                        window.InfoMessage("Green setting format: 0-255")
                     end)
                 
                     G_Box.MouseLeave:Connect(function()
-                        root.ResetMessage()
+                        window.ResetMessage()
 
-                        G_Box.BorderColor3 = WinTheme.Light_Borders;
-                        G_Value.TextColor3 = WinTheme.Text_Color;
+                        G_Box.BorderColor3 = window.WinTheme.Light_Borders;
+                        G_Value.TextColor3 = window.WinTheme.Text_Color;
                     end)
                 end
 
-                B_Box.Name="B_Box"B_Box.Parent=Picker_Main;B_Box.BackgroundColor3=RGB(0,0,0)B_Box.BorderColor3=WinTheme.Light_Borders;B_Box.Position=U2(1,-95,0,56)B_Box.Size=U2(0,90,0,16)B_Box.ZIndex=100003;B_Value.Name="B_Value"B_Value.Parent=B_Box;B_Value.BackgroundColor3=RGB(255,255,255)B_Value.BackgroundTransparency=1.000;B_Value.Position=U2(0,5,0,0)B_Value.Size=U2(1,-5,1,0)B_Value.ZIndex=100003;B_Value.ClearTextOnFocus=false;B_Value.Font=GTHM;B_Value.PlaceholderText="B"B_Value.Text="155"B_Value.TextColor3=WinTheme.Text_Color;B_Value.TextSize=WinTheme.Text_Size_Small;B_Value.TextXAlignment=TXAL;B_Fill.Name="B_Fill"B_Fill.Parent=B_Box;B_Fill.BackgroundColor3=RGB(242,239,255)B_Fill.BorderSizePixel=0;B_Fill.Position=U2(1,-6,0,0)B_Fill.Size=U2(0,6,1,0)B_Fill.ZIndex=100003
+                B_Box.Name="B_Box"B_Box.Parent=Picker_Main;B_Box.BackgroundColor3=RGB(0,0,0)B_Box.BorderColor3=window.WinTheme.Light_Borders;B_Box.Position=U2(1,-95,0,56)B_Box.Size=U2(0,90,0,16)B_Box.ZIndex=lastCPZIndex+12;B_Value.Name="B_Value"B_Value.Parent=B_Box;B_Value.BackgroundColor3=RGB(255,255,255)B_Value.BackgroundTransparency=1.000;B_Value.Position=U2(0,5,0,0)B_Value.Size=U2(1,-5,1,0)B_Value.ZIndex=lastCPZIndex+12;B_Value.ClearTextOnFocus=false;B_Value.Font=GTHM;B_Value.PlaceholderText="B"B_Value.Text="155"B_Value.TextColor3=window.WinTheme.Text_Color;B_Value.TextSize=window.WinTheme.Text_Size_Small;B_Value.TextXAlignment=TXAL;B_Fill.Name="B_Fill"B_Fill.Parent=B_Box;B_Fill.BackgroundColor3=RGB(242,239,255)B_Fill.BorderSizePixel=0;B_Fill.Position=U2(1,-6,0,0)B_Fill.Size=U2(0,6,1,0)B_Fill.ZIndex=lastCPZIndex+12
+                
+                window.NewThemeUpdater({B_Box, B_Value}, function()
+                    B_Box.BorderColor3 = window.WinTheme.Light_Borders;
+                    B_Value.TextColor3 = window.WinTheme.Text_Color;
+                    B_Value.TextSize = window.WinTheme.Text_Size_Small;
+                end)
 
                 do -- B_Box VALUE
                     B_Box.MouseEnter:Connect(function()
-                        B_Box.BorderColor3 = WinTheme.Accent;
-                        B_Value.TextColor3 = WinTheme.Accent;
+                        B_Box.BorderColor3 = window.WinTheme.Accent;
+                        B_Value.TextColor3 = window.WinTheme.Accent;
 
-                        root.InfoMessage("Blue setting format: 0-255")
+                        window.InfoMessage("Blue setting format: 0-255")
                     end)
                 
                     B_Box.MouseLeave:Connect(function()
-                        root.ResetMessage()
+                        window.ResetMessage()
 
-                        B_Box.BorderColor3 = WinTheme.Light_Borders;
-                        B_Value.TextColor3 = WinTheme.Text_Color;
+                        B_Box.BorderColor3 = window.WinTheme.Light_Borders;
+                        B_Value.TextColor3 = window.WinTheme.Text_Color;
                     end)
                 end
 
-                HEX.Name="HEX"HEX.Parent=Picker_Main;HEX.BackgroundColor3=RGB(0,0,0)HEX.BorderColor3=WinTheme.Light_Borders;HEX.Position=U2(1,-95,0,80)HEX.Size=U2(0,90,0,16)HEX.ZIndex=100003;HEX_Value.Name="HEX_Value"HEX_Value.Parent=HEX;HEX_Value.BackgroundColor3=RGB(255,255,255)HEX_Value.BackgroundTransparency=1.000;HEX_Value.Position=U2(0,5,0,0)HEX_Value.Size=U2(1,-5,1,0)HEX_Value.ZIndex=100003;HEX_Value.ClearTextOnFocus=false;HEX_Value.Font=GTHM;HEX_Value.PlaceholderText="HEX"HEX_Value.Text="FFFFFF"HEX_Value.TextColor3=WinTheme.Text_Color;HEX_Value.TextSize=WinTheme.Text_Size_Small;HEX_Value.TextXAlignment=TXAL;HEX_Fill.Name="HEX_Fill"HEX_Fill.Parent=HEX;HEX_Fill.BackgroundColor3=RGB(242,239,255)HEX_Fill.BorderSizePixel=0;HEX_Fill.Position=U2(1,-6,0,0)HEX_Fill.Size=U2(0,6,1,0)HEX_Fill.ZIndex=100003
+                HEX.Name="HEX"HEX.Parent=Picker_Main;HEX.BackgroundColor3=RGB(0,0,0)HEX.BorderColor3=window.WinTheme.Light_Borders;HEX.Position=U2(1,-95,0,80)HEX.Size=U2(0,90,0,16)HEX.ZIndex=lastCPZIndex+12;HEX_Value.Name="HEX_Value"HEX_Value.Parent=HEX;HEX_Value.BackgroundColor3=RGB(255,255,255)HEX_Value.BackgroundTransparency=1.000;HEX_Value.Position=U2(0,5,0,0)HEX_Value.Size=U2(1,-5,1,0)HEX_Value.ZIndex=lastCPZIndex+12;HEX_Value.ClearTextOnFocus=false;HEX_Value.Font=GTHM;HEX_Value.PlaceholderText="HEX"HEX_Value.Text="FFFFFF"HEX_Value.TextColor3=window.WinTheme.Text_Color;HEX_Value.TextSize=window.WinTheme.Text_Size_Small;HEX_Value.TextXAlignment=TXAL;HEX_Fill.Name="HEX_Fill"HEX_Fill.Parent=HEX;HEX_Fill.BackgroundColor3=RGB(242,239,255)HEX_Fill.BorderSizePixel=0;HEX_Fill.Position=U2(1,-6,0,0)HEX_Fill.Size=U2(0,6,1,0)HEX_Fill.ZIndex=lastCPZIndex+12
+                
+                window.NewThemeUpdater({HEX, HEX_Value}, function()
+                    HEX.BorderColor3 = window.WinTheme.Light_Borders;
+
+                    HEX_Value.TextColor3 = window.WinTheme.Text_Color;
+                    HEX_Value.TextSize = window.WinTheme.Text_Size_Small;
+                end)
 
                 do -- HEX VALUE
                     HEX.MouseEnter:Connect(function()
-                        HEX.BorderColor3 = WinTheme.Accent;
-                        HEX_Value.TextColor3 = WinTheme.Accent;
+                        HEX.BorderColor3 = window.WinTheme.Accent;
+                        HEX_Value.TextColor3 = window.WinTheme.Accent;
 
-                        root.InfoMessage("Hexadecimal setting format: #000000")
+                        window.InfoMessage("Hexadecimal setting format: #000000")
                     end)
                 
                     HEX.MouseLeave:Connect(function()
-                        root.ResetMessage()
+                        window.ResetMessage()
 
-                        HEX.BorderColor3 = WinTheme.Light_Borders;
-                        HEX_Value.TextColor3 = WinTheme.Text_Color;
+                        HEX.BorderColor3 = window.WinTheme.Light_Borders;
+                        HEX_Value.TextColor3 = window.WinTheme.Text_Color;
                     end)
                 end
 
-                Copy_Values.Name="Copy_Values"Copy_Values.Parent=Picker_Main;Copy_Values.BackgroundColor3=RGB(0,0,0)Copy_Values.BorderColor3=WinTheme.Light_Borders;Copy_Values.Position=U2(1,-95,0,109)Copy_Values.Size=U2(0,90,0,16)Copy_Values.ZIndex=100003;Copy_Values.AutoButtonColor=false;Copy_Values.Font=GTHM;Copy_Values.Text="Copy Values"Copy_Values.TextColor3=WinTheme.Text_Color;Copy_Values.TextSize=WinTheme.Text_Size_Small;Copy_Values.TextWrapped=true
+                Copy_Values.Name="Copy_Values"Copy_Values.Parent=Picker_Main;Copy_Values.BackgroundColor3=RGB(0,0,0)Copy_Values.BorderColor3=window.WinTheme.Light_Borders;Copy_Values.Position=U2(1,-95,0,109)Copy_Values.Size=U2(0,90,0,16)Copy_Values.ZIndex=lastCPZIndex+12;Copy_Values.AutoButtonColor=false;Copy_Values.Font=GTHM;Copy_Values.Text="Copy Values"Copy_Values.TextColor3=window.WinTheme.Text_Color;Copy_Values.TextSize=window.WinTheme.Text_Size_Small;Copy_Values.TextWrapped=true                
+                
+                window.NewThemeUpdater({Copy_Values}, function()
+                    Copy_Values.BorderColor3 = window.WinTheme.Light_Borders;
+                    Copy_Values.TextColor3 = window.WinTheme.Text_Color;
+                    Copy_Values.TextSize = window.WinTheme.Text_Size_Small;
+                end)
+                
                 do -- COPY VALUES
                     Copy_Values.MouseButton1Click:Connect(function()
                         if setclipboard then setclipboard(R_Value.Text..", "..G_Value.Text..", "..B_Value.Text) end
                     end)
     
                     Copy_Values.MouseEnter:Connect(function()
-                        Copy_Values.BorderColor3 = WinTheme.Accent;
-                        Copy_Values.TextColor3 = WinTheme.Accent;
+                        Copy_Values.BorderColor3 = window.WinTheme.Accent;
+                        Copy_Values.TextColor3 = window.WinTheme.Accent;
 
-                        root.InfoMessage("Copies RGB values to your clipboard")
+                        window.InfoMessage("Copies RGB values to your clipboard")
                     end)
                 
                     Copy_Values.MouseLeave:Connect(function()
-                        root.ResetMessage()
+                        window.ResetMessage()
 
-                        Copy_Values.BorderColor3 = WinTheme.Light_Borders;
-                        Copy_Values.TextColor3 = WinTheme.Text_Color;
+                        Copy_Values.BorderColor3 = window.WinTheme.Light_Borders;
+                        Copy_Values.TextColor3 = window.WinTheme.Text_Color;
                     end)
                 end
+
+                lastCPZIndex = lastCPZIndex + 14
 
                 R_Value.Text = ROUND(info.Default.R*255)
                 G_Value.Text = ROUND(info.Default.G*255)
@@ -1657,11 +1938,11 @@ Library.NewWindow = function(window_info)
 
                 HUEPicker.MouseButton1Down:Connect(function()
                     SelectingHUE = true
-                    Indicator.BorderColor3 = WinTheme.Accent;
+                    Indicator.BorderColor3 = window.WinTheme.Accent;
                 end)
                 HSVBox.MouseButton1Down:Connect(function()
                     SelectingHSV = true
-                    Cursor.BorderColor3 = WinTheme.Accent;
+                    Cursor.BorderColor3 = window.WinTheme.Accent;
                 end)
 
                 local selecting_c
@@ -1673,7 +1954,7 @@ Library.NewWindow = function(window_info)
                         SelectingHSV = false
 
                         Cursor.BorderColor3 = RGB(0, 0, 0)
-                        Indicator.BorderColor3 = WinTheme.Light_Borders;
+                        Indicator.BorderColor3 = window.WinTheme.Light_Borders;
                     end
                 end)
                 
@@ -1707,7 +1988,7 @@ Library.NewWindow = function(window_info)
 
                     Picker_Close.MouseEnter:Connect(function()
                         Picker_Close.BackgroundTransparency = 0
-                        Picker_Close.ImageColor3 = WinTheme.Accent;
+                        Picker_Close.ImageColor3 = window.WinTheme.Accent;
                     end)
                 
                     Picker_Close.MouseLeave:Connect(function()
@@ -1728,15 +2009,15 @@ Library.NewWindow = function(window_info)
                     end)
     
                     Colorpicker_Detector.MouseEnter:Connect(function()
-                        Colorpicker_Detector.BorderColor3 = WinTheme.Accent;
+                        Colorpicker_Detector.BorderColor3 = window.WinTheme.Accent;
 
-                        root.InfoMessage(info.Description or "")
+                        window.InfoMessage(info.Description or "")
                     end)
                 
                     Colorpicker_Detector.MouseLeave:Connect(function()
-                        root.ResetMessage()
+                        window.ResetMessage()
 
-                        Colorpicker_Detector.BorderColor3 = WinTheme.Light_Borders;
+                        Colorpicker_Detector.BorderColor3 = window.WinTheme.Light_Borders;
                     end)
                 end
 
@@ -1772,14 +2053,18 @@ Library.NewWindow = function(window_info)
 
                 local Options = info.Options or {}
 
-                local ChipSet = NEW("Frame")
+                local Chipset = NEW("Frame")
                 local Chipset_Detector = NEW("TextButton")
                 local Chipset_Title = NEW("TextLabel")
                 local Chipset_Arrow = NEW("TextLabel")
                 local Options_Container = NEW("Frame")
                 local Options_List = NEW("UIListLayout")
 
-                ChipSet.Name="ChipSet"ChipSet.Parent=Item_Container;ChipSet.BackgroundColor3=RGB(255,255,255)ChipSet.BackgroundTransparency=1.000;ChipSet.BorderSizePixel=0;ChipSet.Size=U2(1,0,0,16)Chipset_Detector.Name="Chipset_Detector"Chipset_Detector.Parent=ChipSet;Chipset_Detector.BackgroundColor3=RGB(0,0,0)Chipset_Detector.BorderColor3=WinTheme.Light_Borders;Chipset_Detector.Position=U2(0,5,0,0)Chipset_Detector.Size=U2(1,-10,0,16)Chipset_Detector.AutoButtonColor=false;Chipset_Detector.Font=GTHM;Chipset_Detector.Text=""Chipset_Detector.TextColor3=WinTheme.Text_Color;Chipset_Detector.TextSize=WinTheme.Text_Size_Medium;Chipset_Detector.TextWrapped=true;Chipset_Title.Name="Chipset_Title"Chipset_Title.Parent=Chipset_Detector;Chipset_Title.BackgroundColor3=RGB(255,255,255)Chipset_Title.BackgroundTransparency=1.000;Chipset_Title.Position=U2(0,5,0,0)Chipset_Title.Size=U2(0,1,1,0)Chipset_Title.Font=GTHM;Chipset_Title.Text=info.Text or"Chipset"Chipset_Title.TextColor3=WinTheme.Text_Color;Chipset_Title.TextSize=WinTheme.Text_Size_Small;Chipset_Title.TextXAlignment=TXAL;Chipset_Arrow.Name="Chipset_Arrow"Chipset_Arrow.Parent=Chipset_Detector;Chipset_Arrow.BackgroundColor3=RGB(255,255,255)Chipset_Arrow.BackgroundTransparency=1.000;Chipset_Arrow.Position=U2(1,-15,0.5,-5)Chipset_Arrow.Size=U2(0,10,0,10)Chipset_Arrow.Font=GTHM;Chipset_Arrow.Text="v"Chipset_Arrow.TextColor3=WinTheme.Text_Color;Chipset_Arrow.TextSize=WinTheme.Text_Size_Medium;Options_Container.Name="Options_Container"Options_Container.Parent=Chipset_Detector;Options_Container.BackgroundColor3=RGB(255,255,255)Options_Container.BackgroundTransparency=1.000;Options_Container.Position=U2(0,0,1,8)Options_Container.Size=U2(1,0,1,0)Options_Container.Visible=false;Options_List.Name="Options_List"Options_List.Parent=Options_Container;Options_List.SortOrder=SOLO;Options_List.Padding=U1(0,1)
+                Chipset.Name="Chipset"Chipset.Parent=Item_Container;Chipset.BackgroundColor3=RGB(255,255,255)Chipset.BackgroundTransparency=1.000;Chipset.BorderSizePixel=0;Chipset.Size=U2(1,0,0,16)Chipset_Detector.Name="Chipset_Detector"Chipset_Detector.Parent=Chipset;Chipset_Detector.BackgroundColor3=RGB(0,0,0)Chipset_Detector.BorderColor3=window.WinTheme.Light_Borders;Chipset_Detector.Position=U2(0,5,0,0)Chipset_Detector.Size=U2(1,-10,0,16)Chipset_Detector.AutoButtonColor=false;Chipset_Detector.Font=GTHM;Chipset_Detector.Text=""Chipset_Detector.TextColor3=window.WinTheme.Text_Color;Chipset_Detector.TextSize=window.WinTheme.Text_Size_Medium;Chipset_Detector.TextWrapped=true;Chipset_Title.Name="Chipset_Title"Chipset_Title.Parent=Chipset_Detector;Chipset_Title.BackgroundColor3=RGB(255,255,255)Chipset_Title.BackgroundTransparency=1.000;Chipset_Title.Position=U2(0,5,0,0)Chipset_Title.Size=U2(0,1,1,0)Chipset_Title.Font=GTHM;Chipset_Title.Text=info.Text or"Chipset"Chipset_Title.TextColor3=window.WinTheme.Text_Color;Chipset_Title.TextSize=window.WinTheme.Text_Size_Small;Chipset_Title.TextXAlignment=TXAL;Chipset_Arrow.Name="Chipset_Arrow"Chipset_Arrow.Parent=Chipset_Detector;Chipset_Arrow.BackgroundColor3=RGB(255,255,255)Chipset_Arrow.BackgroundTransparency=1.000;Chipset_Arrow.Position=U2(1,-15,0.5,-5)Chipset_Arrow.Size=U2(0,10,0,10)Chipset_Arrow.Font=GTHM;Chipset_Arrow.Text="v"Chipset_Arrow.TextColor3=window.WinTheme.Text_Color;Chipset_Arrow.TextSize=window.WinTheme.Text_Size_Medium;Options_Container.Name="Options_Container"Options_Container.Parent=Chipset_Detector;Options_Container.BackgroundColor3=RGB(255,255,255)Options_Container.BackgroundTransparency=1.000;Options_Container.Position=U2(0,0,1,8)Options_Container.Size=U2(1,0,1,0)Options_Container.Visible=false;Options_List.Name="Options_List"Options_List.Parent=Options_Container;Options_List.SortOrder=SOLO;Options_List.Padding=U1(0,1)
+
+                window.NewThemeUpdater({Chipset_Detector, Chipset_Title, Chipset_Arrow}, function()
+                    Chipset_Detector.BorderColor3=window.WinTheme.Light_Borders;Chipset_Detector.TextColor3=window.WinTheme.Text_Color;Chipset_Detector.TextSize=window.WinTheme.Text_Size_Medium;Chipset_Title.TextColor3=window.WinTheme.Text_Color;Chipset_Title.TextSize=window.WinTheme.Text_Size_Small;Chipset_Arrow.TextColor3=window.WinTheme.Text_Color;Chipset_Arrow.TextSize=window.WinTheme.Text_Size_Medium
+                end)
 
                 Chipset_Detector.MouseButton1Click:Connect(function()
                     Options_Container.Visible = not Options_Container.Visible
@@ -1793,19 +2078,19 @@ Library.NewWindow = function(window_info)
                 end)
 
                 Chipset_Detector.MouseEnter:Connect(function()
-                    Chipset_Detector.BorderColor3 = WinTheme.Accent;
-                    Chipset_Title.TextColor3 = WinTheme.Accent;
-                    Chipset_Arrow.TextColor3 = WinTheme.Accent;
+                    Chipset_Detector.BorderColor3 = window.WinTheme.Accent;
+                    Chipset_Title.TextColor3 = window.WinTheme.Accent;
+                    Chipset_Arrow.TextColor3 = window.WinTheme.Accent;
         
-                    root.InfoMessage(info.Description or "")
+                    window.InfoMessage(info.Description or "")
                 end)
             
                 Chipset_Detector.MouseLeave:Connect(function()
-                    root.ResetMessage()
+                    window.ResetMessage()
         
-                    Chipset_Detector.BorderColor3 = WinTheme.Light_Borders;
-                    Chipset_Title.TextColor3 = WinTheme.Text_Color;
-                    Chipset_Arrow.TextColor3 = WinTheme.Text_Color;
+                    Chipset_Detector.BorderColor3 = window.WinTheme.Light_Borders;
+                    Chipset_Title.TextColor3 = window.WinTheme.Text_Color;
+                    Chipset_Arrow.TextColor3 = window.WinTheme.Text_Color;
                 end)
 
                 for i,v in pairs(info.Options) do
@@ -1814,11 +2099,17 @@ Library.NewWindow = function(window_info)
                     local Option = NEW("TextButton")
                     local Option_Title = NEW("TextLabel")
 
-                    Option.Name="Option"Option.Parent=Options_Container;Option.BackgroundColor3=RGB(0,0,0)Option.BorderColor3=RGB(10,10,10)Option.Size=U2(1,0,0,16)Option.ZIndex=10;Option.AutoButtonColor=false;Option.Font=GTHM;Option.Text=""Option.TextColor3=RGB(0,0,0)Option.TextSize=WinTheme.Text_Size_Medium;Option_Title.Name="Option_Title"Option_Title.Parent=Option;Option_Title.BackgroundColor3=RGB(255,255,255)Option_Title.BackgroundTransparency=1.000;Option_Title.Position=U2(0,5,0,0)Option_Title.Size=U2(1,0,1,0)Option_Title.ZIndex=11;Option_Title.Font=GTHM;Option_Title.Text=i;Option_Title.TextColor3=WinTheme.Text_Color;Option_Title.TextSize=WinTheme.Text_Size_Small;Option_Title.TextWrapped=true;Option_Title.TextXAlignment=TXAL
+                    Option.Name="Option"Option.Parent=Options_Container;Option.BackgroundColor3=RGB(0,0,0)Option.BorderColor3=RGB(10,10,10)Option.Size=U2(1,0,0,16)Option.ZIndex=10;Option.AutoButtonColor=false;Option.Font=GTHM;Option.Text=""Option.TextColor3=RGB(0,0,0)Option.TextSize=window.WinTheme.Text_Size_Medium;Option_Title.Name="Option_Title"Option_Title.Parent=Option;Option_Title.BackgroundColor3=RGB(255,255,255)Option_Title.BackgroundTransparency=1.000;Option_Title.Position=U2(0,5,0,0)Option_Title.Size=U2(1,0,1,0)Option_Title.ZIndex=11;Option_Title.Font=GTHM;Option_Title.Text=i;Option_Title.TextColor3=window.WinTheme.Text_Color;Option_Title.TextSize=window.WinTheme.Text_Size_Small;Option_Title.TextWrapped=true;Option_Title.TextXAlignment=TXAL
+
+                    window.NewThemeUpdater({Option, Option_Title}, function()
+                        Option.TextSize = window.WinTheme.Text_Size_Medium;
+                        Option_Title.TextColor3 = window.WinTheme.Text_Color;
+                        Option_Title.TextSize = window.WinTheme.Text_Size_Small;
+                    end)
 
                     local TOGGLED = Options[i]
                     if TOGGLED then
-                        Option.BackgroundColor3 = WinTheme.Dark_Accent
+                        Option.BackgroundColor3 = window.WinTheme.Dark_Accent
                     else
                         Option.BackgroundColor3 = RGB(0, 0, 0)
                     end
@@ -1827,7 +2118,7 @@ Library.NewWindow = function(window_info)
                         TOGGLED = not TOGGLED
                         Options[i] = TOGGLED
                         if TOGGLED then
-                            Option.BackgroundColor3 = WinTheme.Dark_Accent
+                            Option.BackgroundColor3 = window.WinTheme.Dark_Accent
                         else
                             Option.BackgroundColor3 = RGB(0, 0, 0)
                         end
@@ -1843,20 +2134,20 @@ Library.NewWindow = function(window_info)
                         Option.ZIndex = 12
                         Option_Title.ZIndex = 13
 
-                        Option.BorderColor3 = WinTheme.Accent;
-                        Option_Title.TextColor3 = WinTheme.Accent;
+                        Option.BorderColor3 = window.WinTheme.Accent;
+                        Option_Title.TextColor3 = window.WinTheme.Accent;
 
-                        root.InfoMessage(info.Description or "")
+                        window.InfoMessage(info.Description or "")
                     end)
                 
                     Option.MouseLeave:Connect(function()
-                        root.ResetMessage()
+                        window.ResetMessage()
 
                         Option.ZIndex = 10
                         Option_Title.ZIndex = 11
 
                         Option.BorderColor3 = RGB(10, 10, 10)
-                        Option_Title.TextColor3 = WinTheme.Text_Color;
+                        Option_Title.TextColor3 = window.WinTheme.Text_Color;
                     end)
                 end
 
@@ -1885,14 +2176,18 @@ Library.NewWindow = function(window_info)
 
                 local Options = info.Options or {}
 
-                local ChipSet = NEW("Frame")
+                local Chipset = NEW("Frame")
                 local Chipset_Detector = NEW("TextButton")
                 local Chipset_Title = NEW("TextLabel")
                 local Chipset_Arrow = NEW("TextLabel")
                 local Options_Container = NEW("Frame")
                 local Options_List = NEW("UIListLayout")
 
-                ChipSet.Name="ChipSet"ChipSet.Parent=Item_Container;ChipSet.BackgroundColor3=RGB(255,255,255)ChipSet.BackgroundTransparency=1.000;ChipSet.BorderSizePixel=0;ChipSet.Size=U2(1,0,0,16)Chipset_Detector.Name="Chipset_Detector"Chipset_Detector.Parent=ChipSet;Chipset_Detector.BackgroundColor3=RGB(0,0,0)Chipset_Detector.BorderColor3=WinTheme.Light_Borders;Chipset_Detector.Position=U2(0,5,0,0)Chipset_Detector.Size=U2(1,-10,0,16)Chipset_Detector.AutoButtonColor=false;Chipset_Detector.Font=GTHM;Chipset_Detector.Text=""Chipset_Detector.TextColor3=WinTheme.Text_Color;Chipset_Detector.TextSize=WinTheme.Text_Size_Medium;Chipset_Detector.TextWrapped=true;Chipset_Title.Name="Chipset_Title"Chipset_Title.Parent=Chipset_Detector;Chipset_Title.BackgroundColor3=RGB(255,255,255)Chipset_Title.BackgroundTransparency=1.000;Chipset_Title.Position=U2(0,5,0,0)Chipset_Title.Size=U2(0,1,1,0)Chipset_Title.Font=GTHM;Chipset_Title.Text=info.Text or"Player List"Chipset_Title.TextColor3=WinTheme.Text_Color;Chipset_Title.TextSize=WinTheme.Text_Size_Small;Chipset_Title.TextXAlignment=TXAL;Chipset_Arrow.Name="Chipset_Arrow"Chipset_Arrow.Parent=Chipset_Detector;Chipset_Arrow.BackgroundColor3=RGB(255,255,255)Chipset_Arrow.BackgroundTransparency=1.000;Chipset_Arrow.Position=U2(1,-15,0.5,-5)Chipset_Arrow.Size=U2(0,10,0,10)Chipset_Arrow.Font=GTHM;Chipset_Arrow.Text="v"Chipset_Arrow.TextColor3=WinTheme.Text_Color;Chipset_Arrow.TextSize=11.000;Options_Container.Name="Options_Container"Options_Container.Parent=Chipset_Detector;Options_Container.BackgroundColor3=RGB(255,255,255)Options_Container.BackgroundTransparency=1.000;Options_Container.Position=U2(0,0,1,8)Options_Container.Size=U2(1,0,1,0)Options_Container.Visible=false;Options_List.Name="Options_List"Options_List.Parent=Options_Container;Options_List.SortOrder=SOLO;Options_List.Padding=U1(0,1)
+                Chipset.Name="Chipset"Chipset.Parent=Item_Container;Chipset.BackgroundColor3=RGB(255,255,255)Chipset.BackgroundTransparency=1.000;Chipset.BorderSizePixel=0;Chipset.Size=U2(1,0,0,16)Chipset_Detector.Name="Chipset_Detector"Chipset_Detector.Parent=Chipset;Chipset_Detector.BackgroundColor3=RGB(0,0,0)Chipset_Detector.BorderColor3=window.WinTheme.Light_Borders;Chipset_Detector.Position=U2(0,5,0,0)Chipset_Detector.Size=U2(1,-10,0,16)Chipset_Detector.AutoButtonColor=false;Chipset_Detector.Font=GTHM;Chipset_Detector.Text=""Chipset_Detector.TextColor3=window.WinTheme.Text_Color;Chipset_Detector.TextSize=window.WinTheme.Text_Size_Medium;Chipset_Detector.TextWrapped=true;Chipset_Title.Name="Chipset_Title"Chipset_Title.Parent=Chipset_Detector;Chipset_Title.BackgroundColor3=RGB(255,255,255)Chipset_Title.BackgroundTransparency=1.000;Chipset_Title.Position=U2(0,5,0,0)Chipset_Title.Size=U2(0,1,1,0)Chipset_Title.Font=GTHM;Chipset_Title.Text=info.Text or"Player List"Chipset_Title.TextColor3=window.WinTheme.Text_Color;Chipset_Title.TextSize=window.WinTheme.Text_Size_Small;Chipset_Title.TextXAlignment=TXAL;Chipset_Arrow.Name="Chipset_Arrow"Chipset_Arrow.Parent=Chipset_Detector;Chipset_Arrow.BackgroundColor3=RGB(255,255,255)Chipset_Arrow.BackgroundTransparency=1.000;Chipset_Arrow.Position=U2(1,-15,0.5,-5)Chipset_Arrow.Size=U2(0,10,0,10)Chipset_Arrow.Font=GTHM;Chipset_Arrow.Text="v"Chipset_Arrow.TextColor3=window.WinTheme.Text_Color;Chipset_Arrow.TextSize=11.000;Options_Container.Name="Options_Container"Options_Container.Parent=Chipset_Detector;Options_Container.BackgroundColor3=RGB(255,255,255)Options_Container.BackgroundTransparency=1.000;Options_Container.Position=U2(0,0,1,8)Options_Container.Size=U2(1,0,1,0)Options_Container.Visible=false;Options_List.Name="Options_List"Options_List.Parent=Options_Container;Options_List.SortOrder=SOLO;Options_List.Padding=U1(0,1)
+
+                window.NewThemeUpdater({Chipset_Detector, Chipset_Title, Chipset_Arrow}, function()
+                    Chipset_Detector.BorderColor3=window.WinTheme.Light_Borders;Chipset_Detector.TextColor3=window.WinTheme.Text_Color;Chipset_Detector.TextSize=window.WinTheme.Text_Size_Medium;Chipset_Title.TextColor3=window.WinTheme.Text_Color;Chipset_Title.TextSize=window.WinTheme.Text_Size_Small;Chipset_Arrow.TextColor3=window.WinTheme.Text_Color
+                end)
 
                 Chipset_Detector.MouseButton1Click:Connect(function()
                     Options_Container.Visible = not Options_Container.Visible
@@ -1906,85 +2201,96 @@ Library.NewWindow = function(window_info)
                 end)
 
                 Chipset_Detector.MouseEnter:Connect(function()
-                    Chipset_Detector.BorderColor3 = WinTheme.Accent;
-                    Chipset_Title.TextColor3 = WinTheme.Accent;
-                    Chipset_Arrow.TextColor3 = WinTheme.Accent;
+                    Chipset_Detector.BorderColor3 = window.WinTheme.Accent;
+                    Chipset_Title.TextColor3 = window.WinTheme.Accent;
+                    Chipset_Arrow.TextColor3 = window.WinTheme.Accent;
         
-                    root.InfoMessage(info.Description or "")
+                    window.InfoMessage(info.Description or "")
                 end)
             
                 Chipset_Detector.MouseLeave:Connect(function()
-                    root.ResetMessage()
+                    window.ResetMessage()
         
-                    Chipset_Detector.BorderColor3 = WinTheme.Light_Borders;
-                    Chipset_Title.TextColor3 = WinTheme.Text_Color;
-                    Chipset_Arrow.TextColor3 = WinTheme.Text_Color;
+                    Chipset_Detector.BorderColor3 = window.WinTheme.Light_Borders;
+                    Chipset_Title.TextColor3 = window.WinTheme.Text_Color;
+                    Chipset_Arrow.TextColor3 = window.WinTheme.Text_Color;
                 end)
 
                 local player_table = {}
+
+                local function NewPlayerOption(v)
+                    local player_name = v.Name
+
+                    local Option = NEW("TextButton")
+                    local Option_Title = NEW("TextLabel")
+
+                    Option.Name="Option"Option.Parent=Options_Container;Option.BackgroundColor3=RGB(0,0,0)Option.BorderColor3=RGB(10,10,10)Option.Size=U2(1,0,0,16)Option.ZIndex=10;Option.AutoButtonColor=false;Option.Font=GTHM;Option.Text=""Option.TextColor3=RGB(0,0,0)Option.TextSize=window.WinTheme.Text_Size_Medium;Option_Title.Name="Option_Title"Option_Title.Parent=Option;Option_Title.BackgroundColor3=RGB(255,255,255)Option_Title.BackgroundTransparency=1.000;Option_Title.Position=U2(0,5,0,0)Option_Title.Size=U2(1,0,1,0)Option_Title.ZIndex=11;Option_Title.Font=GTHM;Option_Title.Text=v.Name;Option_Title.TextColor3=window.WinTheme.Text_Color;Option_Title.TextSize=window.WinTheme.Text_Size_Small;Option_Title.TextWrapped=true;Option_Title.TextXAlignment=TXAL
+
+                    window.NewThemeUpdater({Option, Option_Title}, function()
+                        Option.TextSize = window.WinTheme.Text_Size_Medium;
+
+                        Option_Title.TextColor3 = window.WinTheme.Text_Color;
+                        Option_Title.TextSize = window.WinTheme.Text_Size_Small;
+                    end)
+
+                    local TOGGLED = false
+                    player_table[player_name] = TOGGLED
+                    if TOGGLED then
+                        Option.BackgroundColor3 = window.WinTheme.Dark_Accent
+                    else
+                        Option.BackgroundColor3 = RGB(0, 0, 0)
+                    end
+
+                    local function Toggle_Option()
+                        TOGGLED = not TOGGLED
+                        player_table[player_name] = TOGGLED
+                        
+                        if TOGGLED then
+                            Option.BackgroundColor3 = window.WinTheme.Dark_Accent
+                        else
+                            Option.BackgroundColor3 = RGB(0, 0, 0)
+                        end
+
+                        info.Callback(player_table)
+                    end
+
+                    Option.MouseButton1Click:Connect(function()
+                        Toggle_Option()
+                    end)
+    
+                    Option.MouseEnter:Connect(function()
+                        Option.ZIndex = 12
+                        Option_Title.ZIndex = 13
+
+                        Option.BorderColor3 = window.WinTheme.Accent;
+                        Option_Title.TextColor3 = window.WinTheme.Accent;
+
+                        window.InfoMessage(info.Description or "")
+                    end)
+                
+                    Option.MouseLeave:Connect(function()
+                        window.ResetMessage()
+
+                        Option.ZIndex = 10
+                        Option_Title.ZIndex = 11
+
+                        Option.BorderColor3 = RGB(10, 10, 10)
+                        Option_Title.TextColor3 = window.WinTheme.Text_Color;
+                    end)
+
+                    local c_changed
+                    c_changed = v.AncestryChanged:connect(function()
+                        if not v:IsDescendantOf(game) then
+                            Option:Destroy()
+                        end
+                    end)
+                end
 
                 local t_players = Players:GetPlayers()
                 for i = 1, #t_players do
                     local v = t_players[i]
                     if v.Name ~= Player.Name then
-                        local player_name = v.Name
-
-                        local Option = NEW("TextButton")
-                        local Option_Title = NEW("TextLabel")
-
-                        Option.Name="Option"Option.Parent=Options_Container;Option.BackgroundColor3=RGB(0,0,0)Option.BorderColor3=RGB(10,10,10)Option.Size=U2(1,0,0,16)Option.ZIndex=10;Option.AutoButtonColor=false;Option.Font=GTHM;Option.Text=""Option.TextColor3=RGB(0,0,0)Option.TextSize=WinTheme.Text_Size_Medium;Option_Title.Name="Option_Title"Option_Title.Parent=Option;Option_Title.BackgroundColor3=RGB(255,255,255)Option_Title.BackgroundTransparency=1.000;Option_Title.Position=U2(0,5,0,0)Option_Title.Size=U2(1,0,1,0)Option_Title.ZIndex=11;Option_Title.Font=GTHM;Option_Title.Text=v.Name;Option_Title.TextColor3=WinTheme.Text_Color;Option_Title.TextSize=WinTheme.Text_Size_Small;Option_Title.TextWrapped=true;Option_Title.TextXAlignment=TXAL
-
-                        local TOGGLED = false
-                        player_table[player_name] = TOGGLED
-                        if TOGGLED then
-                            Option.BackgroundColor3 = WinTheme.Dark_Accent
-                        else
-                            Option.BackgroundColor3 = RGB(0, 0, 0)
-                        end
-
-                        local function Toggle_Option()
-                            TOGGLED = not TOGGLED
-                            player_table[player_name] = TOGGLED
-                            
-                            if TOGGLED then
-                                Option.BackgroundColor3 = WinTheme.Dark_Accent
-                            else
-                                Option.BackgroundColor3 = RGB(0, 0, 0)
-                            end
-
-                            info.Callback(player_table)
-                        end
-
-                        Option.MouseButton1Click:Connect(function()
-                            Toggle_Option()
-                        end)
-        
-                        Option.MouseEnter:Connect(function()
-                            Option.ZIndex = 12
-                            Option_Title.ZIndex = 13
-
-                            Option.BorderColor3 = WinTheme.Accent;
-                            Option_Title.TextColor3 = WinTheme.Accent;
-
-                            root.InfoMessage(info.Description or "")
-                        end)
-                    
-                        Option.MouseLeave:Connect(function()
-                            root.ResetMessage()
-
-                            Option.ZIndex = 10
-                            Option_Title.ZIndex = 11
-
-                            Option.BorderColor3 = RGB(10, 10, 10)
-                            Option_Title.TextColor3 = WinTheme.Text_Color;
-                        end)
-
-                        local c_changed
-                        c_changed = v.AncestryChanged:connect(function()
-                            if not v:IsDescendantOf(game) then
-                                Option:Destroy()
-                            end
-                        end)
+                        NewPlayerOption(v)
                     end
                 end
 
@@ -1992,64 +2298,7 @@ Library.NewWindow = function(window_info)
                     if DESTROY_UI then
                         c_added:Disconnect()
                     elseif v.Name ~= Player.Name then
-                        local player_name = v.Name
-
-                        local Option = NEW("TextButton")
-                        local Option_Title = NEW("TextLabel")
-
-                        Option.Name="Option"Option.Parent=Options_Container;Option.BackgroundColor3=RGB(0,0,0)Option.BorderColor3=RGB(10,10,10)Option.Size=U2(1,0,0,16)Option.ZIndex=10;Option.AutoButtonColor=false;Option.Font=GTHM;Option.Text=""Option.TextColor3=RGB(0,0,0)Option.TextSize=WinTheme.Text_Size_Medium;Option_Title.Name="Option_Title"Option_Title.Parent=Option;Option_Title.BackgroundColor3=RGB(255,255,255)Option_Title.BackgroundTransparency=1.000;Option_Title.Position=U2(0,5,0,0)Option_Title.Size=U2(1,0,1,0)Option_Title.ZIndex=11;Option_Title.Font=GTHM;Option_Title.Text=v.Name;Option_Title.TextColor3=WinTheme.Text_Color;Option_Title.TextSize=WinTheme.Text_Size_Small;Option_Title.TextWrapped=true;Option_Title.TextXAlignment=TXAL
-
-                        local TOGGLED = false
-                        player_table[player_name] = TOGGLED
-                        if TOGGLED then
-                            Option.BackgroundColor3 = WinTheme.Dark_Accent
-                        else
-                            Option.BackgroundColor3 = RGB(0, 0, 0)
-                        end
-
-                        local function Toggle_Option()
-                            TOGGLED = not TOGGLED
-                            player_table[player_name] = TOGGLED
-                            
-                            if TOGGLED then
-                                Option.BackgroundColor3 = WinTheme.Dark_Accent
-                            else
-                                Option.BackgroundColor3 = RGB(0, 0, 0)
-                            end
-
-                            info.Callback(player_table)
-                        end
-
-                        Option.MouseButton1Click:Connect(function()
-                            Toggle_Option()
-                        end)
-        
-                        Option.MouseEnter:Connect(function()
-                            Option.ZIndex = 12
-                            Option_Title.ZIndex = 13
-
-                            Option.BorderColor3 = WinTheme.Accent;
-                            Option_Title.TextColor3 = WinTheme.Accent;
-
-                            root.InfoMessage(info.Description or "")
-                        end)
-                    
-                        Option.MouseLeave:Connect(function()
-                            root.ResetMessage()
-
-                            Option.ZIndex = 10
-                            Option_Title.ZIndex = 11
-
-                            Option.BorderColor3 = RGB(10, 10, 10)
-                            Option_Title.TextColor3 = WinTheme.Text_Color;
-                        end)
-
-                        local c_changed
-                        c_changed = v.AncestryChanged:connect(function()
-                            if not v:IsDescendantOf(game) then
-                                Option:Destroy()
-                            end
-                        end)
+                        NewPlayerOption(v)
                     end
                 end)
 
@@ -2076,163 +2325,7 @@ Library.NewWindow = function(window_info)
         return page_funcs
     end
 
-    return root
+    return window
 end
 
 return Library
-
--- local Overrides = {
---     Background = Color3.fromRGB(23, 30, 51),
---     Section_Background = Color3.fromRGB(18, 23, 38),
-
---     Dark_Borders = Color3.fromRGB(18, 23, 38),
---     Light_Borders = Color3.fromRGB(255, 255, 255),
-
---     Text_Color = Color3.fromRGB(235, 235, 235),
-
---     Accent = Color3.fromRGB(255, 81, 0),
---     Dark_Accent = Color3.fromRGB(140, 45, 0),
--- }
-
--- local Window = Library.NewWindow({
---     Text = "Test UI",
-
---     WindowSize = Vector2.new(550, 450),     -- Initial Size of the Window
---     WindowPosition = Vector2.new(400, 200), -- Initial Position of the Window
-
---     ThemeOverrides = Overrides,
---     Scalable = true, -- Default : True
-    
---     -- WindowSizeCallback will fire everytime the user changes the size of the UI, 
---     -- you can use this to save the size into a config system for example
---     WindowSizeCallback = function(new)
---         print("You changed the window size to: " .. new.X .. ", " .. new.Y)
---     end,
-
---     -- WindowPositionCallback will fire everytime the user moves/drags the UI to a new position, 
---     -- you can use this to save the position into a config system for example
---     WindowPositionCallback = function(new)
---         print("You moved the window to: " .. new.X .. ", " .. new.Y)
---     end,
-
---     -- CloseCallback will fire when the user presses the close button on the UI (Top Right)
---     CloseCallback = function()
---         print("You closed the script !")
---     end
--- })
-
--- local Page = Window.NewPage({Text = "Page 1"})
-
--- local Section = Page.NewSection({Text = "Section 1"})
-
--- local Button = Section.NewButton({
---     Text = "Click Me", 
---     Callback = function()
---         print("I got clicked !")
---     end, 
---     Description = "This can be used as a one time feature !"
--- })
-
--- local Toggle = Section.NewToggle({
---     Text = "Toggle Me",
---     Callback = function(bool)
---         print(bool)
---     end, 
---     Default = true,
---     Description = "This turns ON and OFF when you click it !"
--- })
-
--- local TextBox = Section.NewTextBox({
---     Text = "Type", 
---     PlaceHolderText = "Type !",
---     Callback = function(text)
---         print("New Input: " .. text)
---     end, 
-
---     Default = "Green",
---     Description = "Type anything in this box !",
-
---     OnlyNumeric = true,         -- Only Allow Numeric Output (Numbers)
---     -- OnlyAlphabetic = true    -- Only Allow Alphabetic Output (Letters)
--- })
-
--- local Slider = Section.NewSlider({
---     Text = "Slide Me",
---     Callback = function(value)
---         print("You slid to: " .. value)
---     end,
---     Default = 50,
---     Min = 1, Max = 100,
---     Decimals = 0, -- Number of decimal numbers to show after the period/comma
---     Suffix = "m",
---     Description = "You can slide me with your mouse to change the value !"
--- })
-
--- local Dropdown = Section.NewDropdown({
---     Text = "Select Me", 
---     Callback = function(option)
---         print("You selected: " .. option)
---     end, 
---     Options = { -- Spoiler : Won't be in order
---         "Red",
---         "Green",
---         "Blue"
---     }, 
---     Default = 2, -- Index of the default option (e.g. "Green")
---     Description = "You can select a single item from this list !"
--- })
-
--- local Keybind = Section.NewKeybind({
---     Text = "Press Me", 
---     Callback = function()
---         print("You pressed the right key !")
---     end, 
---     KeyCallback = function(new)
---         print("You changed the key to: " .. string.sub(tostring(new), 14, #tostring(new)))
---     end, 
---     Default = Enum.KeyCode.X,
---     Description = "Press the key to activate this !",
--- })
-
--- local Picker = Section.NewColorPicker({
---     Text = "Pick Me", 
---     Callback = function(color)
---         print("You picked the new color: " .. color.R .. ", " .. color.G .. ", " .. color.B)
---     end, 
---     Default = Color3.fromRGB(0, 50, 0),
---     Description = "Pick a new color from this little frame !"
--- })
-
--- local Chipset = Section.NewChipset({
---     Text = "Select Me", 
---     Callback = function(tbl)
---         print("New Options:")
---         for i,v in pairs(tbl) do
---             print("    " .. tostring(i) .. ": " .. tostring(v))
---         end
---     end, 
---     Options = {
---         Switch1 = true,
---         Switch2 = false,
---         Switch3 = true
---     }, 
---     Description = "Select individual options from this little dropdown !"
--- })
-
--- local PlayerTbl = {}
--- local PlayerList = Section.NewPlayerChipset({
---     Text = "Player List", 
---     Callback = function(tbl) 
---         PlayerTbl = tbl
---     end, 
---     Description = "Select individual players from this auto-updating list of players !"
--- })
-
--- for i = 1, 5 do
---     Window.NewNotification({
---         Title = "Ring-Ring",
---         Body = "Hello, your pizza delivery is here ! That'll be a total of 5.50 $ ...",
---         Time = math.random(2, 10)
---     })
---     task.wait(0.2)
--- end
