@@ -593,17 +593,7 @@ Library.NewWindow = function(window_info)
             local Resize_Diag = NEW("Folder")
 
             do -- Diagonal 
-                ResizeXY.Name = "ResizeXY"
-                ResizeXY.Parent = Window;
-                ResizeXY.AutoButtonColor = false;
-                ResizeXY.BackgroundColor3 = window.WinTheme.Dark_Accent;
-                ResizeXY.BackgroundTransparency = 0;
-                ResizeXY.Position = U2(1, -6, 1, -6)
-                ResizeXY.BorderSizePixel = 0;
-                ResizeXY.Size = U2(0, 6, 0, 6)
-                ResizeXY.ZIndex = 100000;
-                ResizeXY.Text = ""
-                ResizeXY.Visible = true;
+                ResizeXY.Name="ResizeXY"ResizeXY.Parent=Window;ResizeXY.AutoButtonColor=false;ResizeXY.BackgroundColor3=window.WinTheme.Dark_Accent;ResizeXY.BackgroundTransparency=0;ResizeXY.Position=U2(1,-6,1,-6)ResizeXY.BorderSizePixel=0;ResizeXY.Size=U2(0,6,0,6)ResizeXY.ZIndex=100000;ResizeXY.Text=""ResizeXY.Visible=true
             
                 window.NewThemeUpdater({ResizeXY}, function()
                     ResizeXY.BackgroundColor3 = window.WinTheme.Dark_Accent;
@@ -2101,31 +2091,26 @@ Library.NewWindow = function(window_info)
                     Option.Name="Option"Option.Parent=Options_Container;Option.BackgroundColor3=RGB(0,0,0)Option.BorderColor3=RGB(10,10,10)Option.Size=U2(1,0,0,16)Option.ZIndex=10;Option.AutoButtonColor=false;Option.Font=GTHM;Option.Text=""Option.TextColor3=RGB(0,0,0)Option.TextSize=window.WinTheme.Text_Size_Medium;Option_Title.Name="Option_Title"Option_Title.Parent=Option;Option_Title.BackgroundColor3=RGB(255,255,255)Option_Title.BackgroundTransparency=1.000;Option_Title.Position=U2(0,5,0,0)Option_Title.Size=U2(1,0,1,0)Option_Title.ZIndex=11;Option_Title.Font=GTHM;Option_Title.Text=i;Option_Title.TextColor3=window.WinTheme.Text_Color;Option_Title.TextSize=window.WinTheme.Text_Size_Small;Option_Title.TextWrapped=true;Option_Title.TextXAlignment=TXAL
 
                     local TOGGLED = Options[i]
-                    if TOGGLED then
-                        Option.BackgroundColor3 = window.WinTheme.Dark_Accent
-                    else
-                        Option.BackgroundColor3 = RGB(0, 0, 0)
+                    local function UpdateColor()
+                        if TOGGLED then
+                            Option.BackgroundColor3 = window.WinTheme.Dark_Accent
+                        else
+                            Option.BackgroundColor3 = RGB(0, 0, 0)
+                        end
                     end
+                    UpdateColor()
 
                     window.NewThemeUpdater({Option, Option_Title}, function()
                         Option.TextSize = window.WinTheme.Text_Size_Medium;
                         Option_Title.TextColor3 = window.WinTheme.Text_Color;
                         Option_Title.TextSize = window.WinTheme.Text_Size_Small;
-                        if TOGGLED then
-                            Option.BackgroundColor3 = window.WinTheme.Dark_Accent
-                        else
-                            Option.BackgroundColor3 = RGB(0, 0, 0)
-                        end
+                        UpdateColor()
                     end)
 
                     local function Toggle_Option()
                         TOGGLED = not TOGGLED
                         Options[i] = TOGGLED
-                        if TOGGLED then
-                            Option.BackgroundColor3 = window.WinTheme.Dark_Accent
-                        else
-                            Option.BackgroundColor3 = RGB(0, 0, 0)
-                        end
+                        UpdateColor()
 
                         info.Callback(Options)
                     end
@@ -2232,11 +2217,14 @@ Library.NewWindow = function(window_info)
 
                     local TOGGLED = false
                     player_table[player_name] = TOGGLED
-                    if TOGGLED then
-                        Option.BackgroundColor3 = window.WinTheme.Dark_Accent
-                    else
-                        Option.BackgroundColor3 = RGB(0, 0, 0)
+                    local function UpdateColor()
+                        if TOGGLED then
+                            Option.BackgroundColor3 = window.WinTheme.Dark_Accent
+                        else
+                            Option.BackgroundColor3 = RGB(0, 0, 0)
+                        end
                     end
+                    UpdateColor()
 
                     window.NewThemeUpdater({Option, Option_Title}, function()
                         Option.TextSize = window.WinTheme.Text_Size_Medium;
@@ -2244,22 +2232,14 @@ Library.NewWindow = function(window_info)
                         Option_Title.TextColor3 = window.WinTheme.Text_Color;
                         Option_Title.TextSize = window.WinTheme.Text_Size_Small;
 
-                        if TOGGLED then
-                            Option.BackgroundColor3 = window.WinTheme.Dark_Accent
-                        else
-                            Option.BackgroundColor3 = RGB(0, 0, 0)
-                        end
+                        UpdateColor()
                     end)
 
                     local function Toggle_Option()
                         TOGGLED = not TOGGLED
                         player_table[player_name] = TOGGLED
                         
-                        if TOGGLED then
-                            Option.BackgroundColor3 = window.WinTheme.Dark_Accent
-                        else
-                            Option.BackgroundColor3 = RGB(0, 0, 0)
-                        end
+                        UpdateColor()
 
                         info.Callback(player_table)
                     end
