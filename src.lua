@@ -2,7 +2,7 @@
 
     Author : Blissful#4492
     Finish Date : 26/2/22
-    Documentation : https://blissful.gitbook.io/kinetic/
+    Documentation : https://blissfuls.world/kinetic/
     GitRepo : https://github.com/Blissful4992/Kinetic
 
 ]]--
@@ -343,8 +343,7 @@ Library.NewWindow = function(window_info)
 
     UI.Name="UI"
 
-    -- Protect_GUI(UI)
-    UI.Parent = game.CoreGui
+    Protect_GUI(UI)
 
     UI.ZIndexBehavior = Enum.ZIndexBehavior.Global
     UI.ResetOnSpawn=false;Window.Name="Window"Window.Parent=UI;Window.BackgroundColor3=RGB(255,255,255)Window.BackgroundTransparency=1.000;Window.Position=U2(0, window_info.WindowPosition.X, 0, window_info.WindowPosition.Y)Window.Size=U2(0,window_info.WindowSize.X,0,window_info.WindowSize.Y)Top_Bar.Name="Top_Bar"Top_Bar.Parent=Window;Top_Bar.Active=true;Top_Bar.BackgroundColor3=RGB(40,40,40)Top_Bar.BackgroundColor3=window.WinTheme.Background;Top_Bar.BorderColor3=window.WinTheme.Dark_Borders;Top_Bar.BorderSizePixel=2;Top_Bar.Size=U2(1,0,0,20)Top_Bar.ZIndex=10001;Title.Name="Title"Title.Parent=Top_Bar;Title.BackgroundColor3=RGB(255,255,255)Title.BackgroundTransparency=1.000;Title.Position=U2(0.5,0,0,0)Title.Size=U2(0,1,1,0)Title.ZIndex=10002;Title.Font=GTHM;Title.Text=window_info.Text or"Test Title"Title.TextColor3=window.WinTheme.Text_Color;Title.TextSize=window.WinTheme.Text_Size_Medium;Close.Name="Close"Close.Parent=Top_Bar;Close.BackgroundTransparency=1;Close.BackgroundColor3=window.WinTheme.Background;Close.BorderColor3=window.WinTheme.Accent;Close.BorderSizePixel=1;Close.Position=U2(1,-20,0,0)Close.Size=U2(0,20,0,20)Close.ZIndex=10005;Close.AutoButtonColor=false;Close.Image="rbxassetid://7246920077"Close_Left.Name="Close_Left"Close_Left.Parent=Close;Close_Left.BackgroundColor3=window.WinTheme.Background;Close_Left.BorderSizePixel=0;Close_Left.Size=U2(0,6,1,0)Close_Left.ZIndex=10006;Close_Right.Name="Close_Right"Close_Right.Parent=Close;Close_Right.BackgroundColor3=window.WinTheme.Background;Close_Right.BorderSizePixel=0;Close_Right.Position=U2(1,-6,0,0)Close_Right.Size=U2(0,6,1,0)Close_Right.ZIndex=10006;Minimize.Name="Minimize"Minimize.Parent=Top_Bar;Minimize.BackgroundTransparency=1;Minimize.BackgroundColor3=window.WinTheme.Background;Minimize.BorderColor3=window.WinTheme.Accent;Minimize.BorderSizePixel=1;Minimize.Position=U2(1,-41,0,0)Minimize.Size=U2(0,20,0,20)Minimize.ZIndex=10005;Minimize.AutoButtonColor=false;Minimize.Image=MinIcon;Minimize_Left.Name="Minimize_Left"Minimize_Left.Parent=Minimize;Minimize_Left.BackgroundColor3=window.WinTheme.Background;Minimize_Left.BorderSizePixel=0;Minimize_Left.Size=U2(0,6,1,0)Minimize_Left.ZIndex=10006;Minimize_Right.Name="Minimize_Right"Minimize_Right.Parent=Minimize;Minimize_Right.BackgroundColor3=window.WinTheme.Background;Minimize_Right.BorderSizePixel=0;Minimize_Right.Position=U2(1,-6,0,0)Minimize_Right.Size=U2(0,6,1,0)Minimize_Right.ZIndex=10006;Minimize_Top.Name="Minimize_Top"Minimize_Top.Parent=Minimize;Minimize_Top.BackgroundColor3=window.WinTheme.Background;Minimize_Top.BorderSizePixel=0;Minimize_Top.Size=U2(1,0,0,6)Minimize_Top.ZIndex=10006;Minimize_Bottom.Name="Minimize_Bottom"Minimize_Bottom.Parent=Minimize;Minimize_Bottom.BackgroundColor3=window.WinTheme.Background;Minimize_Bottom.BorderSizePixel=0;Minimize_Bottom.Position=U2(0,0,1,-6)Minimize_Bottom.Size=U2(1,0,0,6)Minimize_Bottom.ZIndex=10006;Page_Selector.Name="Page_Selector"Page_Selector.Parent=Window;Page_Selector.Active=true;Page_Selector.BackgroundColor3=window.WinTheme.Background;Page_Selector.BorderColor3=window.WinTheme.Dark_Borders;Page_Selector.BorderSizePixel=2;Page_Selector.Position=U2(0,0,0,22)Page_Selector.Size=U2(1,0,0,32)Page_Selector.ZIndex=10000;Page_Selector.CanvasSize=U2(0,0,0,0)Page_Selector.AutomaticCanvasSize=Enum.AutomaticSize.X;Page_Selector.ScrollBarThickness=0;Page_List_Layout.Name="Page_List_Layout"Page_List_Layout.Parent=Page_Selector;Page_List_Layout.Padding=U1(0,0)Page_List_Layout.FillDirection=Enum.FillDirection.Horizontal;Page_List_Layout.HorizontalAlignment=Enum.HorizontalAlignment.Center;Page_List_Layout.SortOrder=SOLO;Main.Name="Main"Main.Parent=Window;Main.BackgroundColor3=window.WinTheme.Background;Main.BorderColor3=window.WinTheme.Dark_Borders;Main.BorderSizePixel=2;Main.Position=U2(0,0,0,55)Main.Size=U2(1,0,1,-55)Manager.Name="Manager"Manager.Parent=Main;Manager.BackgroundColor3=RGB(255,255,255)Manager.BackgroundTransparency=1.000;Manager.Position=U2(0,0,1,-60)Manager.Size=U2(1,0,0,60)Manager_Border.Name="Manager_Border"Manager_Border.Parent=Manager;Manager_Border.BackgroundColor3=window.WinTheme.Dark_Borders;Manager_Border.BorderSizePixel=0;Manager_Border.Position=U2(0,5,0,-1)Manager_Border.Size=U2(1,-9,0,2)Picker_Windows.Name="Picker_Windows"Picker_Windows.Parent=UI;Picker_Windows.BackgroundColor3=RGB(255,255,255)Picker_Windows.BackgroundTransparency=1.000;Picker_Windows.Size=U2(1,0,1,0)Feature_Info.Name="Feature_Info"Feature_Info.Parent=Manager;Feature_Info.BackgroundColor3=window.WinTheme.Dark_Borders;Feature_Info.BorderColor3=window.WinTheme.Dark_Borders;Feature_Info.BorderSizePixel=4;Feature_Info.Position=U2(0,9,1,-25)Feature_Info.Size=U2(1,-18,0,16)Feature_Info.Font=GTHM;Feature_Info.Text="This will turn ESP on/off"Feature_Info.TextColor3=window.WinTheme.Text_Color;Feature_Info.TextSize=window.WinTheme.Text_Size_Medium;Feature_Info.TextTruncate=Enum.TextTruncate.AtEnd;Feature_Info.TextXAlignment=TXAL
@@ -2101,18 +2100,23 @@ Library.NewWindow = function(window_info)
 
                     Option.Name="Option"Option.Parent=Options_Container;Option.BackgroundColor3=RGB(0,0,0)Option.BorderColor3=RGB(10,10,10)Option.Size=U2(1,0,0,16)Option.ZIndex=10;Option.AutoButtonColor=false;Option.Font=GTHM;Option.Text=""Option.TextColor3=RGB(0,0,0)Option.TextSize=window.WinTheme.Text_Size_Medium;Option_Title.Name="Option_Title"Option_Title.Parent=Option;Option_Title.BackgroundColor3=RGB(255,255,255)Option_Title.BackgroundTransparency=1.000;Option_Title.Position=U2(0,5,0,0)Option_Title.Size=U2(1,0,1,0)Option_Title.ZIndex=11;Option_Title.Font=GTHM;Option_Title.Text=i;Option_Title.TextColor3=window.WinTheme.Text_Color;Option_Title.TextSize=window.WinTheme.Text_Size_Small;Option_Title.TextWrapped=true;Option_Title.TextXAlignment=TXAL
 
-                    window.NewThemeUpdater({Option, Option_Title}, function()
-                        Option.TextSize = window.WinTheme.Text_Size_Medium;
-                        Option_Title.TextColor3 = window.WinTheme.Text_Color;
-                        Option_Title.TextSize = window.WinTheme.Text_Size_Small;
-                    end)
-
                     local TOGGLED = Options[i]
                     if TOGGLED then
                         Option.BackgroundColor3 = window.WinTheme.Dark_Accent
                     else
                         Option.BackgroundColor3 = RGB(0, 0, 0)
                     end
+
+                    window.NewThemeUpdater({Option, Option_Title}, function()
+                        Option.TextSize = window.WinTheme.Text_Size_Medium;
+                        Option_Title.TextColor3 = window.WinTheme.Text_Color;
+                        Option_Title.TextSize = window.WinTheme.Text_Size_Small;
+                        if TOGGLED then
+                            Option.BackgroundColor3 = window.WinTheme.Dark_Accent
+                        else
+                            Option.BackgroundColor3 = RGB(0, 0, 0)
+                        end
+                    end)
 
                     local function Toggle_Option()
                         TOGGLED = not TOGGLED
@@ -2226,13 +2230,6 @@ Library.NewWindow = function(window_info)
 
                     Option.Name="Option"Option.Parent=Options_Container;Option.BackgroundColor3=RGB(0,0,0)Option.BorderColor3=RGB(10,10,10)Option.Size=U2(1,0,0,16)Option.ZIndex=10;Option.AutoButtonColor=false;Option.Font=GTHM;Option.Text=""Option.TextColor3=RGB(0,0,0)Option.TextSize=window.WinTheme.Text_Size_Medium;Option_Title.Name="Option_Title"Option_Title.Parent=Option;Option_Title.BackgroundColor3=RGB(255,255,255)Option_Title.BackgroundTransparency=1.000;Option_Title.Position=U2(0,5,0,0)Option_Title.Size=U2(1,0,1,0)Option_Title.ZIndex=11;Option_Title.Font=GTHM;Option_Title.Text=v.Name;Option_Title.TextColor3=window.WinTheme.Text_Color;Option_Title.TextSize=window.WinTheme.Text_Size_Small;Option_Title.TextWrapped=true;Option_Title.TextXAlignment=TXAL
 
-                    window.NewThemeUpdater({Option, Option_Title}, function()
-                        Option.TextSize = window.WinTheme.Text_Size_Medium;
-
-                        Option_Title.TextColor3 = window.WinTheme.Text_Color;
-                        Option_Title.TextSize = window.WinTheme.Text_Size_Small;
-                    end)
-
                     local TOGGLED = false
                     player_table[player_name] = TOGGLED
                     if TOGGLED then
@@ -2240,6 +2237,19 @@ Library.NewWindow = function(window_info)
                     else
                         Option.BackgroundColor3 = RGB(0, 0, 0)
                     end
+
+                    window.NewThemeUpdater({Option, Option_Title}, function()
+                        Option.TextSize = window.WinTheme.Text_Size_Medium;
+
+                        Option_Title.TextColor3 = window.WinTheme.Text_Color;
+                        Option_Title.TextSize = window.WinTheme.Text_Size_Small;
+
+                        if TOGGLED then
+                            Option.BackgroundColor3 = window.WinTheme.Dark_Accent
+                        else
+                            Option.BackgroundColor3 = RGB(0, 0, 0)
+                        end
+                    end)
 
                     local function Toggle_Option()
                         TOGGLED = not TOGGLED
