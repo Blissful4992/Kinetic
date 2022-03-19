@@ -1308,6 +1308,8 @@ Library.NewWindow = function(window_info)
                     if not Dragging then
                         Slider_Detector.BorderColor3 = window.WinTheme.Accent;
                         Value.TextColor3 = window.WinTheme.Accent;
+
+                        Custom_Cursor.Show_Custom_Cursor(HorizontalSizeId)
                     end
         
                     window.InfoMessage(info.Description or "")
@@ -1317,6 +1319,8 @@ Library.NewWindow = function(window_info)
                     if not Dragging then
                         Slider_Detector.BorderColor3 = window.WinTheme.Light_Borders;
                         Value.TextColor3 = window.WinTheme.Text_Color;
+
+                        Custom_Cursor.Hide_Custom_Cursor()
                     end
 
                     window.ResetMessage()
@@ -1334,9 +1338,11 @@ Library.NewWindow = function(window_info)
                         if MouseIn(Slider_Detector) then
                             Slider_Detector.BorderColor3 = window.WinTheme.Accent;
                             Value.TextColor3 = window.WinTheme.Accent;
+                            Custom_Cursor.Show_Custom_Cursor(HorizontalSizeId)
                         else
                             Slider_Detector.BorderColor3 = window.WinTheme.Light_Borders;
                             Value.TextColor3 = window.WinTheme.Text_Color;
+                            Custom_Cursor.Hide_Custom_Cursor()
                         end
                         Dragging = false
                         RS:UnbindFromRenderStep(RS_ID)
