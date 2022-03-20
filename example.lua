@@ -40,7 +40,20 @@ local Window = Library.NewWindow({
     end
 })
 
-local Prompt = Window.NewPrompt({})
+local Prompt = Window.NewPrompt({
+    Name = "TOS",
+    Text = "By clicking 'Yes' you choose to accept the Terms of Service.",
+
+    Countdown = 5,
+
+    Accept = function()
+        print("Accepted.")
+    end,
+
+    Reject = function()
+        print("Rejected.")
+    end
+})
 
 local Page = Window.NewPage({Text = "Page 1"})
 
