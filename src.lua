@@ -865,7 +865,7 @@ Library.NewWindow = function(window_info)
                         Prompt_Countdown.Text = "Time Remaining: "..Countdown.." s"
                     until Countdown <= 0 or not prompt_Active
 
-                    if (Countdown <= 0) then
+                    if (prompt_Active) then
                         Prompt_Blur.Visible = false
                         Prompt_Window.Visible = false
                         prompt_Active = false
